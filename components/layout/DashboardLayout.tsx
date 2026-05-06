@@ -21,7 +21,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-[#131619] text-gray-200 overflow-hidden font-arabic" dir="rtl">
       {/* Sidebar - Hidden on mobile by default */}
       <div className={`md:flex ${sidebarOpen ? 'flex absolute inset-0 z-50' : 'hidden'}`}>
-        <Sidebar />
+        <Sidebar onClose={() => setSidebarOpen(false)} />
         {sidebarOpen && (
           <div 
             className="flex-1 bg-black/50 md:hidden" 

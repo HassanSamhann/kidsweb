@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings } from 'lucide-react';
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
 
   const navItems = [
@@ -18,7 +18,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-[#1a1d24] border-l border-[#2d3748] h-full flex flex-col text-gray-300 hidden md:flex shrink-0 z-40 relative">
+    <aside className="w-64 bg-[#1a1d24] border-l border-[#2d3748] h-full flex flex-col text-gray-300 shrink-0 z-40 relative">
       <div className="p-6 flex items-center gap-3 border-b border-[#2d3748]">
         <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20 text-xl">
           🕌
@@ -32,7 +32,7 @@ export function Sidebar() {
           const Icon = item.icon;
           
           return (
-            <Link key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href} onClick={onClose}>
               <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
                 isActive 
                   ? 'bg-[#2d3748] text-cyan-400 font-bold border-r-4 border-cyan-400' 
