@@ -1,73 +1,91 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, PlayCircle, ChevronRight } from 'lucide-react';
 import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
-const RECITERS = [
-  { id: '1', name: 'الحسيني العزازي', letter: 'أ' },
-  { id: '2', name: 'الزين محمد أحمد', letter: 'أ' },
-  { id: '3', name: 'الدوكالي محمد العالم', letter: 'أ' },
-  { id: '4', name: 'الفاتح محمد الزبير', letter: 'أ' },
-  { id: '5', name: 'العشري عمران', letter: 'أ' },
-  { id: '6', name: 'العيون الكوشي', letter: 'أ' },
-  { id: '7', name: 'القارئ ياسين', letter: 'أ' },
-  { id: '8', name: 'الوليد الشمسان', letter: 'أ' },
-  { id: '9', name: 'أحمد الحذيفي', letter: 'أ' },
-  { id: '10', name: 'أحمد الحواشي', letter: 'أ' },
-  { id: '11', name: 'أحمد السويلم', letter: 'أ' },
-  { id: '12', name: 'أحمد الطرابلسي', letter: 'أ' },
-  { id: '13', name: 'أحمد النفيس', letter: 'أ' },
-  { id: '14', name: 'أحمد بن علي العجمي', letter: 'أ' },
-  { id: '15', name: 'أحمد خليل شاهين', letter: 'أ' },
-  { id: '16', name: 'أحمد ديان', letter: 'أ' },
-  { id: '17', name: 'أحمد سعود', letter: 'أ' },
-  { id: '18', name: 'أحمد صابر', letter: 'أ' },
-  { id: '19', name: 'أحمد طالب بن حميد', letter: 'أ' },
-  { id: '20', name: 'أحمد عامر', letter: 'أ' },
-  { id: '21', name: 'أحمد عيسى المعصراوي', letter: 'أ' },
-];
+interface Moshaf {
+  id: number;
+  name: string;
+  server: string;
+  surah_total: number;
+  surah_list: string;
+}
+
+interface Reciter {
+  id: number;
+  name: string;
+  letter: string;
+  moshaf: Moshaf[];
+}
 
 const ALPHABET = ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
 
 export default function QuranPage() {
   const [selectedLetter, setSelectedLetter] = useState('أ');
-  const [selectedReciter, setSelectedReciter] = useState<null | typeof RECITERS[0]>(null);
-  const [surahs, setSurahs] = useState<any[]>([]);
+  const [selectedReciter, setSelectedReciter] = useState<Reciter | null>(null);
+  const [reciters, setReciters] = useState<Reciter[]>([]);
+  const [allSurahs, setAllSurahs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const { playTrack } = useAudioPlayer();
 
-  React.useEffect(() => {
-    async function fetchSurahs() {
-      const response = await fetch('https://api.alquran.cloud/v1/surah');
-      const data = await response.json();
-      setSurahs(data.data);
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Fetch All Surahs names
+        const surahRes = await fetch('https://api.alquran.cloud/v1/surah');
+        const surahData = await surahRes.json();
+        setAllSurahs(surahData.data);
+
+        // Fetch Reciters from mp3quran
+        const reciterRes = await fetch('https://mp3quran.net/api/v3/reciters?language=ar');
+        const reciterData = await reciterRes.json();
+        setReciters(reciterData.reciters);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-    fetchSurahs();
+    fetchData();
   }, []);
 
-  const handleReciterClick = (reciter: typeof RECITERS[0]) => {
+  const handleReciterClick = (reciter: Reciter) => {
     setSelectedReciter(reciter);
   };
 
-  const handlePlaySurah = (surah: any) => {
-    if (!selectedReciter) return;
+  const handlePlaySurah = (surahNumber: number) => {
+    if (!selectedReciter || !selectedReciter.moshaf.length) return;
     
-    const paddedId = surah.number.toString().padStart(3, '0');
-    // Using mp3quran as a reliable source for recitations
-    // We'll use a fixed server for now (server8 is Mishary Alafasy, let's use it as default)
-    const audioUrl = `https://server8.mp3quran.net/afs/${paddedId}.mp3`;
+    const moshaf = selectedReciter.moshaf[0]; // Take the first moshaf version
+    const paddedId = surahNumber.toString().padStart(3, '0');
+    const audioUrl = `${moshaf.server}${paddedId}.mp3`;
     
+    const surahInfo = allSurahs.find(s => s.number === surahNumber);
+
     playTrack({
-      id: `${selectedReciter.id}-${surah.number}`,
-      title: surah.name,
+      id: `${selectedReciter.id}-${surahNumber}`,
+      title: surahInfo?.name || `سورة ${surahNumber}`,
       subtitle: selectedReciter.name,
       url: audioUrl
     });
   };
 
+  const filteredReciters = reciters.filter(r => {
+    const matchesLetter = r.letter === selectedLetter;
+    const matchesSearch = r.name.includes(searchQuery);
+    return searchQuery ? matchesSearch : matchesLetter;
+  });
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-[60vh]"><LoadingSpinner size={48} /></div>;
+  }
+
   return (
     <div className="p-8">
-      {/* Search and Filters */}
+      {/* Header Controls */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-3">
           <button 
@@ -76,9 +94,6 @@ export default function QuranPage() {
           >
             {selectedReciter ? <ChevronRight className="w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
             <span>{selectedReciter ? 'العودة للقراء' : 'الوصول السريع'}</span>
-          </button>
-          <button className="px-6 py-2.5 bg-[#2d3748] text-gray-200 rounded-lg font-bold hover:bg-[#3a4659] transition">
-            وقفات تدبرية
           </button>
         </div>
 
@@ -90,12 +105,12 @@ export default function QuranPage() {
       {!selectedReciter ? (
         <div className="flex gap-8 relative">
           {/* Alphabet Sidebar */}
-          <div className="hidden lg:flex flex-col gap-1 sticky top-24 h-fit">
+          <div className="hidden lg:flex flex-col gap-1 sticky top-24 h-fit max-h-[70vh] overflow-y-auto pr-2 scrollbar-hide">
             {ALPHABET.map((letter) => (
               <button
                 key={letter}
                 onClick={() => setSelectedLetter(letter)}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
+                className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all shrink-0 ${
                   selectedLetter === letter 
                     ? 'bg-cyan-500 text-gray-900 shadow-lg shadow-cyan-500/30' 
                     : 'text-gray-500 hover:bg-[#2d3748] hover:text-gray-200'
@@ -111,20 +126,22 @@ export default function QuranPage() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white flex items-center gap-3">
                 <div className="w-2 h-8 bg-cyan-500 rounded-full"></div>
-                قائمة القراء
+                قائمة القراء ({selectedLetter})
               </h2>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                 <input 
                   type="text" 
                   placeholder="بحث باسم القارئ"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-[#1e2329] border border-[#2d3748] rounded-lg py-2 pl-10 pr-4 text-sm text-gray-300 focus:outline-none focus:border-cyan-500 transition-all"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {RECITERS.map((reciter) => (
+              {filteredReciters.map((reciter) => (
                 <div 
                   key={reciter.id}
                   onClick={() => handleReciterClick(reciter)}
@@ -136,39 +153,45 @@ export default function QuranPage() {
                       {reciter.name}
                     </span>
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <PlayCircle className="w-6 h-6 text-cyan-500" />
-                  </div>
+                  <PlayCircle className="w-6 h-6 text-cyan-500 opacity-0 group-hover:opacity-100 transition-all transform group-hover:scale-110" />
                 </div>
               ))}
+              {filteredReciters.length === 0 && (
+                <div className="col-span-full py-12 text-center text-gray-500">لا يوجد قراء بهذا الاسم في هذا القسم</div>
+              )}
             </div>
           </div>
         </div>
       ) : (
         <div className="flex-1">
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-white flex items-center gap-3">
-              <div className="w-2 h-8 bg-cyan-500 rounded-full"></div>
+          <div className="mb-8 p-6 bg-cyan-900/10 border border-cyan-500/20 rounded-[2rem]">
+            <h2 className="text-3xl font-black text-white flex items-center gap-4">
+              <div className="w-3 h-10 bg-cyan-500 rounded-full"></div>
               سورة القرآن بصوت {selectedReciter.name}
             </h2>
+            <p className="text-cyan-400 mt-2 mr-7 font-medium">رواية {selectedReciter.moshaf[0]?.name || 'حفص عن عاصم'}</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {surahs.map((surah) => (
-              <div 
-                key={surah.number}
-                onClick={() => handlePlaySurah(surah)}
-                className="bg-[#1e2329] p-4 rounded-2xl border border-[#2d3748] hover:border-cyan-500/50 cursor-pointer transition-all flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#2d3748] text-cyan-400 rounded-lg flex items-center justify-center text-xs font-bold group-hover:bg-cyan-500 group-hover:text-gray-900 transition-colors">
-                    {surah.number}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {selectedReciter.moshaf[0]?.surah_list.split(',').map((numStr) => {
+              const num = parseInt(numStr);
+              const surahInfo = allSurahs.find(s => s.number === num);
+              return (
+                <div 
+                  key={num}
+                  onClick={() => handlePlaySurah(num)}
+                  className="bg-[#1e2329] p-4 rounded-xl border border-[#2d3748] hover:border-cyan-500/50 cursor-pointer transition-all flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-[#2d3748] text-cyan-400 rounded-lg flex items-center justify-center text-xs font-bold group-hover:bg-cyan-500 group-hover:text-gray-900 transition-colors">
+                      {num}
+                    </div>
+                    <span className="font-bold text-gray-200 font-arabic group-hover:text-white transition-colors">{surahInfo?.name || `سورة ${num}`}</span>
                   </div>
-                  <span className="font-bold text-gray-200 font-arabic">{surah.name}</span>
+                  <PlayCircle className="w-5 h-5 text-gray-500 group-hover:text-cyan-500 transition-all" />
                 </div>
-                <PlayCircle className="w-5 h-5 text-gray-500 group-hover:text-cyan-500 transition-colors" />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
