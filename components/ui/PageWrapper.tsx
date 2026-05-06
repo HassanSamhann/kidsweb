@@ -11,7 +11,7 @@ export function PageWrapper({ children, className, withBottomNav = true }: PageW
   return (
     <main 
       className={cn(
-        'min-h-screen bg-cream w-full max-w-md mx-auto relative shadow-xl overflow-hidden flex flex-col',
+        'min-h-screen bg-cream w-full max-w-md md:max-w-3xl lg:max-w-5xl xl:max-w-7xl mx-auto relative shadow-xl overflow-hidden flex flex-col',
         {
           'pb-20': withBottomNav // Space for bottom navigation
         },

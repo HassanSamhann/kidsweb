@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   description: 'تطبيق تعليمي تفاعلي للأطفال المسلمين',
 };
 
+import { Providers } from '../components/providers/Providers';
+
 export default function RootLayout({
   children,
 }: {
@@ -22,7 +24,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className={cn(notoKufi.className, "antialiased")}>
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

@@ -7,10 +7,12 @@ import { StoryReader } from '../../../features/stories/StoryReader';
 import { StoryQuestion } from '../../../features/stories/StoryQuestion';
 import { RewardPopup } from '../../../components/feedback/RewardPopup';
 import { Button } from '../../../components/ui/Button';
-import { stories } from '../../../data/stories';
+import { stories as fallbackStories } from '../../../data/stories';
 import { useProgress } from '../../../hooks/useProgress';
 import { useRewards } from '../../../hooks/useRewards';
 import { ChevronRight } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 
 type StoryState = 'reading' | 'question' | 'completed';
 
@@ -18,18 +20,53 @@ export default function SingleStoryPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const [storyState, setStoryState] = useState<StoryState>('reading');
+  const [story, setStory] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
   const { addCompletedStory } = useProgress();
   const { showReward, rewardMessage, triggerReward } = useRewards();
 
-  const story = stories.find(s => s.id === id);
-
   useEffect(() => {
-    if (!story) {
-      router.replace('/stories');
+    async function fetchStory() {
+      try {
+        const { data, error } = await supabase
+          .from('stories')
+          .select('*')
+          .eq('slug', id)
+          .single();
+        
+        if (data) {
+          setStory({
+            id: data.slug,
+            title: data.title,
+            description: data.description,
+            content: data.content,
+            question: {
+              text: data.question_text,
+              options: data.question_options,
+              correctAnswerIndex: data.correct_answer_index
+            }
+          });
+        } else {
+          // Fallback
+          const localStory = fallbackStories.find(s => s.id === id);
+          if (localStory) setStory(localStory);
+          else router.replace('/stories');
+        }
+      } catch (err) {
+        console.error('Error fetching story:', err);
+        const localStory = fallbackStories.find(s => s.id === id);
+        if (localStory) setStory(localStory);
+        else router.replace('/stories');
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [story, router]);
+    
+    fetchStory();
+  }, [id, router]);
 
+  if (loading) return <div className="h-screen flex items-center justify-center bg-sky-light"><LoadingSpinner size={48} /></div>;
   if (!story) return null;
 
   const handleFinishReading = () => {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // This function can be marked `async` if using `await` inside
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Since we are using a simple client-side localStorage auth for the kids app,
   // we can't fully check the token securely here without SSR cookies.
   // But we can check if they are trying to access protected routes and just pass through

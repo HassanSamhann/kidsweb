@@ -1,16 +1,17 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { HexColorPicker } from 'react-colorful';
-import { Eraser, Download, Palette, Trash2, Brush } from 'lucide-react';
+import { Eraser, Download, Palette, Trash2, Brush, PaintBucket, Shapes } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 import { useProgress } from '../../hooks/useProgress';
 import { useRewards } from '../../hooks/useRewards';
 import { RewardPopup } from '../../components/feedback/RewardPopup';
+import { floodFill } from './utils';
 
 const COLORS = [
-  '#000000', '#FF0000', '#00FF00', '#0000FF', 
-  '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', 
-  '#800080', '#008000', '#FFFFFF'
+  '#000000', '#FFFFFF', '#FF3B30', '#FF9500', '#FFCC00', 
+  '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55',
+  '#FF9FCE', '#A2DED0', '#FDFD96', '#B19CD9'
 ];
 
 const TEMPLATES = [
@@ -25,8 +26,9 @@ export function ColoringApp() {
   const [color, setColor] = useState('#FF0000');
   const [brushSize, setBrushSize] = useState(10);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [isEraser, setIsEraser] = useState(false);
+  const [activeTool, setActiveTool] = useState<'brush' | 'eraser' | 'fill'>('brush');
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   
   const { addCompletedGame } = useProgress();
   const { showReward, rewardMessage, triggerReward } = useRewards();
@@ -41,7 +43,10 @@ export function ColoringApp() {
     const resizeCanvas = () => {
       // Save current content
       const ctx = canvas.getContext('2d');
-      const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+      let imageData = null;
+      if (canvas.width > 0 && canvas.height > 0) {
+        imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+      }
       
       const { width, height } = container.getBoundingClientRect();
       canvas.width = width;
@@ -66,6 +71,25 @@ export function ColoringApp() {
   }, []);
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    if (activeTool === 'fill') {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      let x, y;
+      if ('touches' in e) {
+        x = Math.floor(e.touches[0].clientX - rect.left);
+        y = Math.floor(e.touches[0].clientY - rect.top);
+      } else {
+        x = Math.floor((e as React.MouseEvent).clientX - rect.left);
+        y = Math.floor((e as React.MouseEvent).clientY - rect.top);
+      }
+      
+      floodFill(ctx, x, y, color);
+      return;
+    }
+
     setIsDrawing(true);
     draw(e);
   };
@@ -80,7 +104,7 @@ export function ColoringApp() {
   };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return;
+    if (!isDrawing || activeTool === 'fill') return;
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -101,7 +125,8 @@ export function ColoringApp() {
 
     ctx.lineWidth = brushSize;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = isEraser ? '#FFFFFF' : color;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = activeTool === 'eraser' ? '#FFFFFF' : color;
 
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -117,6 +142,57 @@ export function ColoringApp() {
     
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const drawTemplate = (templateId: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Clear canvas first
+    clearCanvas();
+    
+    ctx.beginPath();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 5;
+    
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const size = Math.min(canvas.width, canvas.height) * 0.3;
+
+    if (templateId === 'star') {
+      for (let i = 0; i < 5; i++) {
+        ctx.lineTo(cx + Math.cos((18 + i * 72) / 180 * Math.PI) * size,
+                   cy - Math.sin((18 + i * 72) / 180 * Math.PI) * size);
+        ctx.lineTo(cx + Math.cos((54 + i * 72) / 180 * Math.PI) * (size/2.5),
+                   cy - Math.sin((54 + i * 72) / 180 * Math.PI) * (size/2.5));
+      }
+      ctx.closePath();
+      ctx.stroke();
+    } else if (templateId === 'crescent') {
+      ctx.arc(cx, cy, size, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.arc(cx + size * 0.4, cy - size * 0.4, size * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (templateId === 'mosque') {
+      // Base
+      ctx.strokeRect(cx - size, cy, size * 2, size);
+      // Dome
+      ctx.arc(cx, cy, size * 0.6, Math.PI, 0);
+      ctx.stroke();
+      // Minaret
+      ctx.strokeRect(cx + size + 20, cy - size * 0.8, size * 0.3, size * 1.8);
+      ctx.beginPath();
+      ctx.moveTo(cx + size + 20, cy - size * 0.8);
+      ctx.lineTo(cx + size + 20 + size * 0.15, cy - size * 1.2);
+      ctx.lineTo(cx + size + 20 + size * 0.3, cy - size * 0.8);
+      ctx.stroke();
+    }
+    
+    setShowTemplates(false);
   };
 
   const saveImage = () => {
@@ -144,21 +220,53 @@ export function ColoringApp() {
       <div className="bg-gray-50 p-4 border-b-2 border-gray-200 flex flex-wrap gap-2 items-center justify-between">
         <div className="flex gap-2">
           <Button 
-            variant={isEraser ? 'ghost' : 'primary'} 
+            variant={activeTool === 'brush' ? 'primary' : 'ghost'} 
             size="sm"
-            onClick={() => setIsEraser(false)}
+            onClick={() => setActiveTool('brush')}
             className="w-12 h-12 p-0 rounded-xl"
           >
-            <Brush className={cn("w-6 h-6", !isEraser && "text-white")} />
+            <Brush className={cn("w-6 h-6", activeTool === 'brush' && "text-white")} />
           </Button>
           <Button 
-            variant={isEraser ? 'primary' : 'ghost'} 
+            variant={activeTool === 'eraser' ? 'primary' : 'ghost'} 
             size="sm"
-            onClick={() => setIsEraser(true)}
+            onClick={() => setActiveTool('eraser')}
             className="w-12 h-12 p-0 rounded-xl"
           >
-            <Eraser className={cn("w-6 h-6", isEraser && "text-white")} />
+            <Eraser className={cn("w-6 h-6", activeTool === 'eraser' && "text-white")} />
           </Button>
+          <Button 
+            variant={activeTool === 'fill' ? 'primary' : 'ghost'} 
+            size="sm"
+            onClick={() => setActiveTool('fill')}
+            className="w-12 h-12 p-0 rounded-xl"
+          >
+            <PaintBucket className={cn("w-6 h-6", activeTool === 'fill' && "text-white")} />
+          </Button>
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowTemplates(!showTemplates)}
+              className="w-12 h-12 p-0 rounded-xl bg-gray-200 hover:bg-gray-300"
+            >
+              <Shapes className="w-6 h-6 text-gray-700" />
+            </Button>
+            {showTemplates && (
+              <div className="absolute top-14 right-0 z-50 bg-white p-4 rounded-2xl shadow-2xl border-2 border-gray-100 flex gap-2 w-[180px] flex-wrap justify-center">
+                {TEMPLATES.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => drawTemplate(t.id)}
+                    className="flex flex-col items-center justify-center p-2 hover:bg-sky-light rounded-xl transition-colors"
+                  >
+                    <span className="text-2xl">{t.emoji}</span>
+                    <span className="text-xs font-bold mt-1 text-gray-600">{t.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2 items-center relative">
@@ -189,7 +297,7 @@ export function ColoringApp() {
                     onClick={() => {
                       setColor(c);
                       setShowColorPicker(false);
-                      setIsEraser(false);
+                      if (activeTool === 'eraser') setActiveTool('brush');
                     }}
                   />
                 ))}
@@ -209,7 +317,7 @@ export function ColoringApp() {
           />
           <div 
             className="bg-gray-800 rounded-full" 
-            style={{ width: brushSize, height: brushSize, backgroundColor: isEraser ? '#gray-300' : color }}
+            style={{ width: brushSize, height: brushSize, backgroundColor: activeTool === 'eraser' ? '#d1d5db' : color }}
           />
         </div>
       </div>
