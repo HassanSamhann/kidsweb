@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Search, Radio, Globe, Moon, User, Menu } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Radio, Globe, Moon, User as UserIcon, Menu } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
@@ -50,12 +51,29 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
           <Moon className="w-5 h-5" />
         </button>
 
-        <button className="flex items-center gap-2 p-1.5 md:px-4 md:py-2 bg-[#2d3748] hover:bg-[#364052] text-gray-200 rounded-full transition-all border border-transparent hover:border-gray-500">
-          <User className="w-5 h-5" />
-          <span className="hidden md:inline text-sm font-bold">
-            {mounted && user ? user.username : 'تسجيل الدخول'}
-          </span>
-        </button>
+        {mounted && user ? (
+          <button className="flex items-center gap-2 p-1.5 md:px-4 md:py-2 bg-[#2d3748] hover:bg-[#364052] text-gray-200 rounded-full transition-all border border-transparent hover:border-gray-500">
+            <UserIcon className="w-5 h-5" />
+            <span className="hidden md:inline text-sm font-bold">
+              {user.username}
+            </span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Link 
+              href="/login"
+              className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
+            >
+              تسجيل الدخول
+            </Link>
+            <Link 
+              href="/register"
+              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full text-sm font-bold transition-all shadow-lg shadow-cyan-600/20"
+            >
+              إنشاء حساب
+            </Link>
+          </div>
+        )}
       </div>
       
     </header>

@@ -82,40 +82,47 @@ export default function SingleStoryPage() {
   };
 
   return (
-    <PageWrapper withBottomNav={false} className="bg-sky-light/30">
-      <div className="p-4 h-screen flex flex-col max-h-screen">
+    <div className="p-8 max-w-5xl mx-auto">
+      <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center mb-6">
+        <div className="flex items-center mb-8 gap-4">
           <button 
             onClick={() => router.push('/stories')}
-            className="p-2 bg-white rounded-full shadow-sm mr-4"
+            className="p-3 bg-[#1e2329] border border-[#2d3748] rounded-xl hover:bg-[#252b36] transition-all text-gray-400 hover:text-white"
           >
-            <ChevronRight className="w-6 h-6 text-gray-600" />
+            <ChevronRight className="w-6 h-6" />
           </button>
-          <h1 className="text-2xl font-black text-primary-dark">{story.title}</h1>
+          <div>
+            <h1 className="text-3xl font-black text-white">{story.title}</h1>
+            <p className="text-gray-400 text-sm">{story.description}</p>
+          </div>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 pb-4 min-h-0">
+        <div className="flex-1 pb-12">
           {storyState === 'reading' && (
-            <StoryReader story={story} onFinish={handleFinishReading} />
+            <div className="bg-[#1e2329] rounded-[2.5rem] border border-[#2d3748] overflow-hidden shadow-2xl">
+              <StoryReader story={story} onFinish={handleFinishReading} />
+            </div>
           )}
           
           {storyState === 'question' && (
-            <StoryQuestion story={story} onCorrectAnswer={handleCorrectAnswer} />
+            <div className="bg-[#1e2329] rounded-[2.5rem] border border-[#2d3748] overflow-hidden shadow-2xl">
+              <StoryQuestion story={story} onCorrectAnswer={handleCorrectAnswer} />
+            </div>
           )}
           
           {storyState === 'completed' && (
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-xl text-center h-full flex flex-col items-center justify-center border-4 border-primary/20">
-              <div className="text-6xl mb-6">🏆</div>
-              <h2 className="text-3xl font-black text-primary-dark mb-4">عمل رائع!</h2>
-              <p className="text-xl font-bold text-gray-600 mb-8 leading-relaxed">
-                لقد قرأت القصة بتمعن وأجبت على السؤال إجابة صحيحة.
+            <div className="bg-[#1e2329] rounded-[2.5rem] p-12 border border-[#2d3748] text-center shadow-2xl flex flex-col items-center justify-center">
+              <div className="w-24 h-24 bg-orange-400/10 rounded-full flex items-center justify-center text-5xl mb-8 border border-orange-400/20">🏆</div>
+              <h2 className="text-4xl font-black text-white mb-6">عمل رائع يا بطل!</h2>
+              <p className="text-xl font-medium text-gray-400 mb-10 max-w-lg leading-relaxed">
+                لقد قرأت القصة بتمعن وأجبت على السؤال إجابة صحيحة. حصلت على نجمة ذكاء ⭐
               </p>
               <Button 
                 size="lg" 
                 onClick={() => router.push('/stories')}
-                className="px-12 text-xl"
+                className="px-12 py-4 bg-orange-400 hover:bg-orange-300 text-gray-900 text-xl rounded-2xl font-black transition-all shadow-lg shadow-orange-400/20"
               >
                 العودة للقصص
               </Button>
@@ -128,6 +135,6 @@ export default function SingleStoryPage() {
         show={showReward} 
         message={rewardMessage} 
       />
-    </PageWrapper>
+    </div>
   );
 }

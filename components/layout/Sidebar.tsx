@@ -14,6 +14,7 @@ export function Sidebar() {
     { href: '/hadith', icon: BookText, label: 'الحديث النبوي' },
     { href: '/azkar', icon: HeartHandshake, label: 'حصن المسلم' },
     { href: '/stories', icon: Smile, label: 'ركن الأطفال' },
+    { href: '/about', icon: HeartHandshake, label: 'من نحن' },
   ];
 
   return (
@@ -45,11 +46,23 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-[#2d3748]">
+      <div className="p-4 border-t border-[#2d3748] space-y-2">
         <button className="flex items-center gap-4 px-4 py-3 w-full rounded-xl hover:bg-[#252b36] hover:text-white transition-colors text-right">
           <Settings className="w-5 h-5 text-gray-400" />
           <span>الإعدادات</span>
         </button>
+        
+        <div className="px-4 py-4 mt-2 bg-[#1e2329] rounded-2xl border border-[#2d3748]">
+          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-bold">Created by</p>
+          <a 
+            href="https://hassansamhan.vercel.app/" 
+            target="_blank" 
+            className="text-xs font-bold text-gray-300 hover:text-cyan-400 transition-colors flex items-center gap-2 group"
+          >
+            Hassan Samhan
+            <Settings className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </a>
+        </div>
       </div>
     </aside>
   );
