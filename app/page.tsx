@@ -54,9 +54,16 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-5xl">
         {portals.map((portal) => {
           const Icon = portal.icon;
+          const isKidsCorner = portal.title === 'ركن الأطفال';
+          
           return (
             <Link key={portal.href} href={portal.href}>
-              <div className={`flex items-center p-8 rounded-[2rem] cursor-pointer transition-all duration-300 transform hover:-translate-y-2 bg-[#1e2329] border border-[#2d3748] shadow-xl ${portal.borderColor}`}>
+              <div className={`flex items-center p-8 rounded-[2rem] cursor-pointer transition-all duration-300 transform hover:-translate-y-2 bg-[#1e2329] border border-[#2d3748] shadow-xl ${portal.borderColor} relative overflow-hidden group`}>
+                {isKidsCorner && (
+                  <div className="absolute top-4 left-4 bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-xs font-bold border border-orange-500/30 backdrop-blur-sm z-10">
+                    جاري التحديث
+                  </div>
+                )}
                 <div className={`p-5 rounded-2xl ml-6 ${portal.color}`}>
                   <Icon className="w-10 h-10" />
                 </div>

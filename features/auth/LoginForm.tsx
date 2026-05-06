@@ -47,36 +47,36 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto space-y-6 bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border-4 border-sky-light">
+    <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto space-y-6 bg-[#1e2329] p-6 md:p-8 rounded-[2rem] shadow-2xl border border-[#2d3748]">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-black text-primary-dark mb-2">أهلاً بك مجدداً!</h2>
-        <p className="text-gray-500 font-medium">سجل دخولك لتكمل اللعب والتعلم</p>
+        <h2 className="text-3xl font-black text-white mb-2">أهلاً بك مجدداً!</h2>
+        <p className="text-gray-400 font-medium">سجل دخولك لتكمل رحلتك</p>
       </div>
 
       {error && (
-        <div className="bg-coral-light/50 text-coral p-4 rounded-xl text-center font-bold text-sm">
+        <div className="bg-red-500/10 text-red-400 p-4 rounded-xl text-center font-bold text-sm border border-red-500/20">
           {error}
         </div>
       )}
 
       <div className="space-y-4">
         <div>
-          <label className="block text-gray-700 font-bold mb-2 pr-2" htmlFor="username">
-            اسمك
+          <label className="block text-gray-400 font-bold mb-2 pr-2" htmlFor="username">
+            اسم المستخدم
           </label>
           <input
             id="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all outline-none font-bold text-lg"
-            placeholder="مثال: أحمد"
+            className="w-full px-6 py-4 rounded-2xl bg-[#131619] border border-[#2d3748] text-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none font-bold text-lg placeholder:text-gray-600"
+            placeholder="ادخل اسمك هنا"
             disabled={isLoading}
           />
         </div>
 
         <div>
-          <label className="block text-gray-700 font-bold mb-2 pr-2" htmlFor="pin">
+          <label className="block text-gray-400 font-bold mb-2 pr-2" htmlFor="pin">
             الرقم السري (4 أرقام)
           </label>
           <input
@@ -87,7 +87,7 @@ export function LoginForm() {
             maxLength={4}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
-            className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all outline-none font-bold text-2xl text-center tracking-widest"
+            className="w-full px-6 py-4 rounded-2xl bg-[#131619] border border-[#2d3748] text-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none font-bold text-2xl text-center tracking-widest placeholder:text-gray-600"
             placeholder="••••"
             disabled={isLoading}
           />
@@ -95,14 +95,13 @@ export function LoginForm() {
       </div>
 
       <div className="pt-4">
-        <Button 
+        <button 
           type="submit" 
-          fullWidth 
-          size="lg" 
           disabled={isLoading}
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-black px-6 py-4 rounded-2xl font-black text-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? <LoadingSpinner size={24} className="text-white p-0" /> : 'دخول'}
-        </Button>
+          {isLoading ? <LoadingSpinner size={24} className="text-black" /> : 'دخول'}
+        </button>
       </div>
     </form>
   );
