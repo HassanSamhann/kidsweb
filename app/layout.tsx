@@ -10,8 +10,8 @@ const notoKufi = Noto_Kufi_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: 'إسلامي乐园 | العب وتعلم',
-  description: 'تطبيق تعليمي تفاعلي للأطفال المسلمين',
+  title: 'إسلامي',
+  description: 'قران, احاديث , قصص , ادعية, اذكار',
 };
 
 import { Providers } from '../components/providers/Providers';
