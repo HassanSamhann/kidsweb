@@ -20,8 +20,18 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <aside className="w-64 bg-[#1a1d24] border-l border-[#2d3748] h-full flex flex-col text-gray-300 shrink-0 z-40 relative">
       <div className="p-6 flex items-center gap-3 border-b border-[#2d3748]">
-        <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20 text-xl">
-          🕌
+        <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center border border-cyan-500/20 shadow-lg shadow-cyan-500/10">
+          <svg 
+            viewBox="0 0 24 24" 
+            className="w-6 h-6 text-cyan-500"
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          >
+            <path d="M20 12v10"/><path d="M4 12v10"/><path d="M2 20h20"/><path d="M7 22v-5c0-1.1.9-2 2-2h6a2 2 0 0 1 2 2v5"/><path d="M12 2v2"/><path d="M12 8c-2.2 0-4-1.8-4-4a4 4 0 0 1 8 0c0 2.2-1.8 4-4 4Z"/><path d="M3.5 12a2.5 2.5 0 0 1 5 0"/><path d="M15.5 12a2.5 2.5 0 0 1 5 0"/><path d="M2 12h5"/><path d="M17 12h5"/>
+          </svg>
         </div>
         <h1 className="text-2xl font-black text-white">إسلامي</h1>
       </div>
