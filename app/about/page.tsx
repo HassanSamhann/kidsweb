@@ -11,33 +11,7 @@ export default function AboutPage() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: About Me */}
-        <div className="lg:col-span-2 space-y-8">
-          <section className="bg-[#1e2329] border border-[#2d3748] rounded-[2rem] p-8">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-2 h-6 bg-cyan-500 rounded-full"></div>
-              عن المطور
-            </h2>
-            <div className="space-y-6 text-gray-300 leading-relaxed text-lg font-arabic">
-              <p>{personalInfo.bio.chapter1.text}</p>
-              <p>{personalInfo.bio.chapter2.text}</p>
-              <p>{personalInfo.bio.chapter3.text}</p>
-            </div>
-          </section>
-
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {personalInfo.whatIBring.map((item, idx) => (
-              <div key={idx} className="bg-[#1e2329] border border-[#2d3748] p-6 rounded-2xl">
-                <h3 className="text-white font-bold mb-2 flex items-center gap-2">
-                  <span className="text-cyan-400">{item.title}</span>
-                </h3>
-                <p className="text-gray-400 text-sm">{item.desc}</p>
-              </div>
-            ))}
-          </section>
-        </div>
-
-        {/* Right Column: Contact & Stats */}
+         {/* Right Column: Contact & Stats */}
         <div className="space-y-6">
           <section className="bg-[#1e2329] border border-[#2d3748] rounded-[2rem] p-8">
             <div className="text-center mb-8">
@@ -79,6 +53,33 @@ export default function AboutPage() {
             ))}
           </div>
         </div>
+        {/* Left Column: About Me */}
+        <div className="lg:col-span-2 space-y-8">
+          <section className="bg-[#1e2329] border border-[#2d3748] rounded-[2rem] p-8">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <div className="w-2 h-6 bg-cyan-500 rounded-full"></div>
+              عن المطور
+            </h2>
+            <div className="space-y-6 text-gray-300 leading-relaxed text-lg font-arabic">
+              <p>{personalInfo.bio.chapter1.text}</p>
+              <p>{personalInfo.bio.chapter2.text}</p>
+              <p>{personalInfo.bio.chapter3.text}</p>
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {personalInfo.whatIBring.map((item, idx) => (
+              <div key={idx} className="bg-[#1e2329] border border-[#2d3748] p-6 rounded-2xl">
+                <h3 className="text-white font-bold mb-2 flex items-center gap-2">
+                  <span className="text-cyan-400">{item.title}</span>
+                </h3>
+                <p className="text-gray-400 text-sm">{item.desc}</p>
+              </div>
+            ))}
+          </section>
+        </div>
+
+       
       </div>
     </div>
   );

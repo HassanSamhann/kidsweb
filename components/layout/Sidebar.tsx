@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings } from 'lucide-react';
+import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info } from 'lucide-react';
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
@@ -11,10 +11,11 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const navItems = [
     { href: '/', icon: Home, label: 'الرئيسية' },
     { href: '/quran', icon: BookOpen, label: 'القرآن الكريم' },
+    { href: '/radio', icon: RadioIcon, label: 'إذاعة القرآن' },
     { href: '/hadith', icon: BookText, label: 'الحديث النبوي' },
     { href: '/azkar', icon: HeartHandshake, label: 'حصن المسلم' },
     { href: '/stories', icon: Smile, label: 'ركن الأطفال' },
-    { href: '/about', icon: HeartHandshake, label: 'من نحن' },
+    { href: '/about', icon: Info, label: 'من نحن' },
   ];
 
   return (
