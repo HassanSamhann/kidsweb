@@ -24,7 +24,7 @@ export default function AzkarPage() {
   useEffect(() => {
     async function fetchAzkar() {
       try {
-        const response = await fetch('https://raw.githubusercontent.com/nawafalqari/azkar-api/56df51279ab6eb86dc2f6202c7de26c8948331c1/azkar.json');
+        const response = await fetch('/data/azkar.json');
         const data = await response.json();
         setAzkarData(data);
       } catch (error) {
@@ -94,8 +94,10 @@ export default function AzkarPage() {
           </div>
         ) : (
           <div className="space-y-6 max-w-4xl mx-auto">
-            {azkarData[selectedCategory].map((zikr, index) => {
-              const maxCount = parseInt(zikr.count) || 1;
+            {azkarData[selectedCategory]
+              .filter(zikr => zikr.content && zikr.content.trim() !== '')
+              .map((zikr, index) => {
+                const maxCount = parseInt(zikr.count) || 1;
               const currentCount = counts[index] || 0;
               const isDone = currentCount >= maxCount;
 
