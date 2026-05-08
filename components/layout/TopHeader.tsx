@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Radio, Globe, Moon, Sun, User as UserIcon, Menu, LogOut, ChevronDown, Star, LayoutDashboard, Settings } from 'lucide-react';
+import { Search, Radio, Globe, Moon, Sun, User as UserIcon, Menu, LogOut, ChevronDown, Star, LayoutDashboard, Settings, Shield } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getUserStats } from '../../lib/activity';
@@ -127,6 +127,16 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
                   <Settings className="w-4 h-4" />
                   <span>الإعدادات</span>
                 </Link>
+                {user?.role === 'admin' && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-3 w-full px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold"
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span>الإدارة</span>
+                  </Link>
+                )}
                 <button
                   onClick={() => {
                     logout();

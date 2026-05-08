@@ -3,10 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info, Clock, Star, BookMarked, Headphones, Trophy, LayoutDashboard, Swords, Compass } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info, Clock, Star, BookMarked, Headphones, Trophy, LayoutDashboard, Swords, Compass, Shield } from 'lucide-react';
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const { user } = useAuth();
 
   const navItems = [
     { href: '/', icon: Home, label: 'الرئيسية' },
@@ -73,6 +75,12 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
           <Settings className="w-5 h-5 text-gray-400" />
           <span>الإعدادات</span>
         </Link>
+        {user?.role === 'admin' && (
+          <Link href="/admin" onClick={onClose} className="flex items-center gap-4 px-4 py-3 w-full rounded-xl hover:bg-[#252b36] hover:text-white transition-colors text-right">
+            <Shield className="w-5 h-5 text-red-400" />
+            <span className="text-red-400">الإدارة</span>
+          </Link>
+        )}
         
         <div className="px-4 py-4 mt-2 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)]">
           <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-bold">Created by</p>

@@ -2,6 +2,8 @@ export interface User {
   id: string;
   username: string;
   stars: number;
+  pin?: string;
+  role?: string;
   completed_stories: string[]; // Story IDs
   completed_games: string[]; // Game IDs
   created_at: string;
