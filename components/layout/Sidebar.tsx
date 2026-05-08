@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info } from 'lucide-react';
+import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info, Clock, Star, BookMarked, Headphones, Trophy, LayoutDashboard } from 'lucide-react';
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
@@ -11,16 +11,22 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const navItems = [
     { href: '/', icon: Home, label: 'الرئيسية' },
     { href: '/quran', icon: BookOpen, label: 'القرآن الكريم' },
+    { href: '/quran-read', icon: BookMarked, label: 'قراءة القرآن' },
+    { href: '/tafseer', icon: Headphones, label: 'التفسير الصوتي' },
     { href: '/radio', icon: RadioIcon, label: 'إذاعة القرآن' },
     { href: '/hadith', icon: BookText, label: 'الحديث النبوي' },
     { href: '/azkar', icon: HeartHandshake, label: 'حصن المسلم' },
+    { href: '/prayer', icon: Clock, label: 'مواقيت الصلاة' },
+    { href: '/asmaa-allah', icon: Star, label: 'أسماء الله الحسنى' },
     { href: '/stories', icon: Smile, label: 'ركن الأطفال' },
     { href: '/about', icon: Info, label: 'من نحن' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'الإنجازات' },
+    { href: '/leaderboard', icon: Trophy, label: 'المتصدرين' },
   ];
 
   return (
-    <aside className="w-64 bg-[#1a1d24] border-l border-[#2d3748] h-full flex flex-col text-gray-300 shrink-0 z-40 relative">
-      <div className="p-6 flex items-center gap-3 border-b border-[#2d3748]">
+    <aside className="w-64 bg-[var(--bg-sidebar)] border-l border-[var(--border-color)] h-full flex flex-col text-[var(--text-secondary)] shrink-0 z-40 relative transition-colors">
+      <div className="p-6 flex items-center gap-3 border-b border-[var(--border-color)]">
         <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center border border-cyan-500/20 shadow-lg shadow-cyan-500/10">
           <svg 
             viewBox="0 0 24 24" 
@@ -57,13 +63,13 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-[#2d3748] space-y-2">
+      <div className="p-4 border-t border-[var(--border-color)] space-y-2">
         <button className="flex items-center gap-4 px-4 py-3 w-full rounded-xl hover:bg-[#252b36] hover:text-white transition-colors text-right">
           <Settings className="w-5 h-5 text-gray-400" />
           <span>الإعدادات</span>
         </button>
         
-        <div className="px-4 py-4 mt-2 bg-[#1e2329] rounded-2xl border border-[#2d3748]">
+        <div className="px-4 py-4 mt-2 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)]">
           <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-bold">Created by</p>
           <a 
             href="https://hassansamhan.vercel.app/" 

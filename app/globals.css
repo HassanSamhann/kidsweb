@@ -24,6 +24,32 @@ body {
   direction: rtl;
 }
 
+:root {
+  --bg-app: #131619;
+  --bg-header: #1e2329;
+  --bg-sidebar: #1a1d24;
+  --bg-main: #1a1d24;
+  --bg-card: #1e2329;
+  --bg-input: #1a1d24;
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --border-color: #2d3748;
+}
+
+html.light {
+  --bg-app: #e5e7eb;
+  --bg-header: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-main: #f3f4f6;
+  --bg-card: #ffffff;
+  --bg-input: #f9fafb;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --border-color: #d1d5db;
+}
+
 * {
   box-sizing: border-box;
 }

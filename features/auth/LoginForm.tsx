@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '../../lib/auth';
 import { useAuth } from '../../hooks/useAuth';
-import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 export function LoginForm() {
