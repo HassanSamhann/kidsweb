@@ -146,6 +146,10 @@ export default function ChallengePage() {
     setMyAnswers(prev => ({ ...prev, [qIdx]: selected }));
 
     if (data.completed) {
+      // Fetch latest session data (answers, scores) for correct review
+      const freshRes = await fetch(`/api/challenge/session/${s.id}`);
+      const freshSession = await freshRes.json();
+      setSession(freshSession);
       setMyScore(data.my_score);
       setOpponentScore(data.opponent_score);
       setStage('review');
