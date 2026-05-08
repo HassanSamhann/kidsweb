@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Radio, Globe, Moon, Sun, User as UserIcon, Menu, LogOut, ChevronDown, Star, LayoutDashboard } from 'lucide-react';
+import { Search, Radio, Globe, Moon, Sun, User as UserIcon, Menu, LogOut, ChevronDown, Star, LayoutDashboard, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getUserStats } from '../../lib/activity';
@@ -118,6 +118,14 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   <span>لوحة الإنجازات</span>
+                </Link>
+                <Link
+                  href="/settings"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-[var(--text-primary)] hover:bg-[var(--border-color)] transition-colors text-sm font-bold"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>الإعدادات</span>
                 </Link>
                 <button
                   onClick={() => {

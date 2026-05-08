@@ -7,7 +7,7 @@ import { AppHeader } from '../../components/layout/AppHeader';
 import { BottomNav } from '../../components/layout/BottomNav';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../hooks/useAuth';
-import { Star, BookOpen, Gamepad2, LogOut } from 'lucide-react';
+import { Star, BookOpen, Gamepad2, LogOut, Settings } from 'lucide-react';
 import { stories } from '../../data/stories';
 
 export default function ProfilePage() {
@@ -69,14 +69,24 @@ export default function ProfilePage() {
         </div>
 
         {/* Actions */}
-        <Button 
-          variant="danger" 
-          fullWidth 
-          onClick={handleLogout}
-          className="gap-2 text-lg py-4"
-        >
-          <LogOut className="w-5 h-5" /> تسجيل الخروج
-        </Button>
+        <div className="flex flex-col gap-3">
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => router.push('/settings')}
+            className="gap-2 text-lg py-4"
+          >
+            <Settings className="w-5 h-5" /> الإعدادات
+          </Button>
+          <Button 
+            variant="danger" 
+            fullWidth 
+            onClick={handleLogout}
+            className="gap-2 text-lg py-4"
+          >
+            <LogOut className="w-5 h-5" /> تسجيل الخروج
+          </Button>
+        </div>
       </div>
 
       <BottomNav />
