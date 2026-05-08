@@ -26,7 +26,7 @@ export function StoryList() {
         
         if (data && data.length > 0) {
           // Map to match the existing Story type format
-          const mappedStories = data.map(s => ({
+          const mappedStories = data.map((s: any) => ({
             id: s.slug,
             title: s.title,
             description: s.description,

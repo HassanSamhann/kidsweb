@@ -3,20 +3,22 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info, Clock, Star, BookMarked, Headphones, Trophy, LayoutDashboard } from 'lucide-react';
+import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info, Clock, Star, BookMarked, Headphones, Trophy, LayoutDashboard, Swords, Compass } from 'lucide-react';
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
 
   const navItems = [
     { href: '/', icon: Home, label: 'الرئيسية' },
+    { href: '/challenge', icon: Swords, label: 'التحدي', isNew: true },
     { href: '/quran', icon: BookOpen, label: 'القرآن الكريم' },
     { href: '/quran-read', icon: BookMarked, label: 'قراءة القرآن' },
-    { href: '/tafseer', icon: Headphones, label: 'التفسير الصوتي' },
+    { href: '/tafseer', icon: Headphones, label: 'التفسير' },
     { href: '/radio', icon: RadioIcon, label: 'إذاعة القرآن' },
     { href: '/hadith', icon: BookText, label: 'الحديث النبوي' },
     { href: '/azkar', icon: HeartHandshake, label: 'حصن المسلم' },
     { href: '/prayer', icon: Clock, label: 'مواقيت الصلاة' },
+    { href: '/qibla', icon: Compass, label: 'اتجاه القبلة' },
     { href: '/asmaa-allah', icon: Star, label: 'أسماء الله الحسنى' },
     { href: '/stories', icon: Smile, label: 'ركن الأطفال' },
     { href: '/about', icon: Info, label: 'من نحن' },
@@ -57,6 +59,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
               }`}>
                 <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'text-gray-400'}`} />
                 <span>{item.label}</span>
+                {(item as any).isNew && (
+                  <span className="mr-auto text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-bold">جديد</span>
+                )}
               </div>
             </Link>
           );
