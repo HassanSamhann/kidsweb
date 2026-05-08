@@ -1,6 +1,6 @@
 'use client';
 
-export type ActivityType = 'azkar_morning' | 'azkar_evening' | 'quran_read' | 'quran_listen' | 'tafseer_listen' | 'hadith_read' | 'daily_visit';
+export type ActivityType = 'azkar_morning' | 'azkar_evening' | 'quran_read' | 'quran_listen' | 'tafseer_listen' | 'hadith_read' | 'daily_visit' | 'challenge_win' | 'challenge_lose';
 
 const STAR_VALUES: Record<ActivityType, number> = {
   azkar_morning: 5,
@@ -10,6 +10,8 @@ const STAR_VALUES: Record<ActivityType, number> = {
   tafseer_listen: 2,
   hadith_read: 3,
   daily_visit: 1,
+  challenge_win: 10,
+  challenge_lose: 0,
 };
 
 const ACTIVITY_NAMES: Record<ActivityType, string> = {
@@ -20,6 +22,8 @@ const ACTIVITY_NAMES: Record<ActivityType, string> = {
   tafseer_listen: 'استماع لتسجيل تفسير',
   hadith_read: 'قراءة حديث نبوي',
   daily_visit: 'زيارة يومية',
+  challenge_win: 'فوز في التحدي',
+  challenge_lose: 'خسارة في التحدي',
 };
 
 export function getStarValue(type: ActivityType): number {

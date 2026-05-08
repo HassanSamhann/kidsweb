@@ -30,8 +30,14 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    const { data: user } = await supabase.from('users').select('stars').eq('id', user_id).single();
-    if (!user || user.stars < 10) {
+    const [userResult, monthlyResult] = await Promise.all([
+      supabase.from('users').select('stars').eq('id', user_id).single(),
+      supabase.rpc('get_user_monthly_stars', { p_user_id: user_id }),
+    ]);
+    const lifetimeStars = userResult.data?.stars || 0;
+    const monthlyStars = monthlyResult.data || 0;
+    const totalStars = lifetimeStars + monthlyStars;
+    if (totalStars < 10) {
       return NextResponse.json({ error: 'يجب أن يكون لديك على الأقل 10 نجوم للمشاركة في التحدي' }, { status: 400 });
     }
 
