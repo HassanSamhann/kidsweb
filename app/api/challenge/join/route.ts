@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
           player2_username: username,
           questions,
         })
-        .select('id')
+        .select('*')
         .single();
 
       return NextResponse.json({ matched: true, session });
