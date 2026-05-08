@@ -1,11 +1,12 @@
 'use client';
 
-export type ActivityType = 'azkar_morning' | 'azkar_evening' | 'quran_read' | 'tafseer_listen' | 'hadith_read' | 'daily_visit';
+export type ActivityType = 'azkar_morning' | 'azkar_evening' | 'quran_read' | 'quran_listen' | 'tafseer_listen' | 'hadith_read' | 'daily_visit';
 
 const STAR_VALUES: Record<ActivityType, number> = {
   azkar_morning: 5,
   azkar_evening: 5,
   quran_read: 3,
+  quran_listen: 2,
   tafseer_listen: 2,
   hadith_read: 3,
   daily_visit: 1,
@@ -15,6 +16,7 @@ const ACTIVITY_NAMES: Record<ActivityType, string> = {
   azkar_morning: 'إكمال أذكار الصباح',
   azkar_evening: 'إكمال أذكار المساء',
   quran_read: 'قراءة سورة من القرآن',
+  quran_listen: 'استماع لتلاوة قرآنية',
   tafseer_listen: 'استماع لتسجيل تفسير',
   hadith_read: 'قراءة حديث نبوي',
   daily_visit: 'زيارة يومية',

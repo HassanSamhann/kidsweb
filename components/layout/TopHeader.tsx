@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, Radio, Globe, Moon, Sun, User as UserIcon, Menu, LogOut, ChevronDown, Star, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -10,6 +11,7 @@ import { getUserStats } from '../../lib/activity';
 export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [starCount, setStarCount] = React.useState<number | null>(null);
@@ -75,7 +77,7 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
         <button 
           onClick={toggleTheme}
           className="p-2 text-gray-400 hover:text-white transition" 
-          title={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}
+          title={theme === 'dark' ? 'الوضع الصباحي' : 'الوضع الليلي'}
         >
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
@@ -121,6 +123,7 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
                   onClick={() => {
                     logout();
                     setDropdownOpen(false);
+                    router.push('/login');
                   }}
                   className="flex items-center gap-3 w-full px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-bold"
                 >

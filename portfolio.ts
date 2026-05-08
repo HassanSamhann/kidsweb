@@ -11,6 +11,7 @@ export const personalInfo = {
   location: "Cairo, Egypt",
   linkedin: "https://www.linkedin.com/in/hassan-samhan-194889247/",
   github: "https://github.com/HassanSamhann",
+  portfolio: "https://hassansamhan.vercel.app/",
   cvUrl: "https://drive.google.com/file/d/1v7RFS7Z9AGfD-SEsM3tU1zhnMUfTZ1EP/view?usp=sharing",
   availableForWork: true,
   roles: [

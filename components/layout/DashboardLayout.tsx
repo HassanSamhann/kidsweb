@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopHeader } from './TopHeader';
 import { GlobalAudioPlayer } from '../audio/GlobalAudioPlayer';
 import { usePathname } from 'next/navigation';
+import { claimDailyVisit } from '../../lib/activity';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -12,6 +13,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   
   // Hide dashboard layout on auth pages
   const isAuthPage = pathname?.includes('/login') || pathname?.includes('/register');
+
+  useEffect(() => {
+    if (!isAuthPage) {
+      claimDailyVisit();
+    }
+  }, [isAuthPage]);
 
   if (isAuthPage) {
     return <>{children}</>;

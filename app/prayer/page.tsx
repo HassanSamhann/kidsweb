@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Sunrise, Sunset, Moon, Sun, CloudSun, Clock, MapPin } from 'lucide-react';
+import { Sunrise, Sunset, Moon, Sun, CloudSun, Clock, MapPin, ChevronDown } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 interface PrayerTimings {
@@ -39,6 +39,27 @@ const PRAYER_NAMES: Record<string, { ar: string; icon: React.ReactNode }> = {
 
 const PRAYER_ORDER = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
+const POPULAR_CITIES = [
+  { ar: 'القاهرة', en: 'Cairo' },
+  { ar: 'الإسكندرية', en: 'Alexandria' },
+  { ar: 'الجيزة', en: 'Giza' },
+  { ar: 'الإسماعيلية', en: 'Ismailia' },
+  { ar: 'بور سعيد', en: 'Port Said' },
+  { ar: 'السويس', en: 'Suez' },
+  { ar: 'أسيوط', en: 'Assiut' },
+  { ar: 'الأقصر', en: 'Luxor' },
+  { ar: 'أسوان', en: 'Aswan' },
+  { ar: 'طنطا', en: 'Tanta' },
+  { ar: 'المنصورة', en: 'Mansoura' },
+  { ar: 'دمياط', en: 'Damietta' },
+  { ar: 'جدة', en: 'Jeddah' },
+  { ar: 'الرياض', en: 'Riyadh' },
+  { ar: 'مكة', en: 'Makkah' },
+  { ar: 'المدينة', en: 'Medina' },
+  { ar: 'الدمام', en: 'Dammam' },
+  { ar: 'الإمارات', en: 'Dubai' },
+];
+
 function getNextPrayer(timings: PrayerTimings): { key: string; index: number } | null {
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -54,13 +75,36 @@ function getNextPrayer(timings: PrayerTimings): { key: string; index: number } |
   return null;
 }
 
+function detectCity(): string {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('prayerCity');
+    if (saved) return saved;
+  }
+  return 'Cairo';
+}
+
 export default function PrayerPage() {
   const [data, setData] = useState<PrayerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [nextPrayer, setNextPrayer] = useState<string | null>(null);
   const [countdown, setCountdown] = useState('');
-  const [city, setCity] = useState('Cairo');
+  const [city, setCity] = useState<string>('Cairo');
+  const [showCityMenu, setShowCityMenu] = useState(false);
   const [country] = useState('Egypt');
+
+  // Initialize city from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('prayerCity');
+    if (saved) {
+      setCity(saved);
+    }
+  }, []);
+
+  const handleCityChange = (cityName: string) => {
+    setCity(cityName);
+    localStorage.setItem('prayerCity', cityName);
+    setShowCityMenu(false);
+  };
 
   const fetchTimings = useCallback(async (c: string) => {
     setLoading(true);
@@ -129,6 +173,38 @@ export default function PrayerPage() {
         <div className="flex justify-center p-12"><LoadingSpinner size={48} /></div>
       ) : data ? (
         <div className="max-w-2xl mx-auto space-y-6">
+          {/* City Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setShowCityMenu(!showCityMenu)}
+              className="w-full bg-[#1e2329] border border-[#2d3748] rounded-[1.5rem] p-4 text-right flex items-center justify-between hover:border-amber-500/50 transition-colors"
+            >
+              <div className="flex items-center gap-2 text-amber-400">
+                <MapPin className="w-4 h-4" />
+                <span className="font-bold">{city}</span>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showCityMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showCityMenu && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#1e2329] border border-[#2d3748] rounded-[1.5rem] overflow-hidden z-50 max-h-80 overflow-y-auto">
+                {POPULAR_CITIES.map((c) => (
+                  <button
+                    key={c.en}
+                    onClick={() => handleCityChange(c.en)}
+                    className={`w-full text-right px-4 py-3 transition-colors border-b border-[#2d3748] last:border-b-0 ${
+                      c.en === city
+                        ? 'bg-amber-500/10 text-amber-400 font-bold'
+                        : 'text-gray-300 hover:bg-[#252d33]'
+                    }`}
+                  >
+                    {c.ar} ({c.en})
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Date & Location */}
           <div className="bg-[#1e2329] rounded-[2rem] p-6 border border-[#2d3748]">
             <div className="flex items-center justify-between mb-4">

@@ -37,6 +37,12 @@ export default function AboutPage() {
                 <span className="text-sm">LinkedIn</span>
                 <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
               </a>
+                            <a href={personalInfo.portfolio} target="_blank" className="flex items-center gap-3 p-3 rounded-xl bg-[#131619] border border-[#2d3748] text-gray-300 hover:text-white hover:border-cyan-500/50 transition-all">
+                <Globe className="w-5 h-5 text-gray-400" />
+                <span className="text-sm">Portfolio</span>
+                <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
+              </a>
+
               <div className="flex items-center gap-3 p-3 rounded-xl bg-[#131619] border border-[#2d3748] text-gray-300">
                 <MapPin className="w-5 h-5 text-red-500" />
                 <span className="text-sm">{personalInfo.location}</span>

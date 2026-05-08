@@ -28,7 +28,7 @@ export default function ProfilePage() {
   const totalGames = 2; // Wudhu and Prayer
 
   return (
-    <PageWrapper className="bg-cream">
+    <PageWrapper>
       <AppHeader title="حسابي" showStars={false} />
       
       <div className="p-4 flex-1 pb-24">

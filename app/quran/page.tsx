@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, PlayCircle, ChevronRight } from 'lucide-react';
+import { Search, Filter, PlayCircle, ChevronRight, Star } from 'lucide-react';
 import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { logActivity } from '../../lib/activity';
 
 interface Moshaf {
   id: number;
@@ -71,6 +72,7 @@ export default function QuranPage() {
       subtitle: selectedReciter.name,
       url: audioUrl
     });
+    logActivity('quran_listen', { reciter_id: selectedReciter.id, surah_id: surahNumber });
   };
 
   const filteredReciters = reciters.filter(r => {

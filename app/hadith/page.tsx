@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, BookText } from 'lucide-react';
+import { ChevronRight, BookText, Star } from 'lucide-react';
 import { PageWrapper } from '../../components/ui/PageWrapper';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { logActivity } from '../../lib/activity';
 
 interface Hadith {
   hadithnumber: number;
@@ -24,6 +25,7 @@ export default function HadithPage() {
         const response = await fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-nawawi.json');
         const data = await response.json();
         setHadiths(data.hadiths);
+        logActivity('hadith_read');
       } catch (error) {
         console.error('Error fetching Hadith:', error);
       } finally {
