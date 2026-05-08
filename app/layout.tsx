@@ -10,17 +10,84 @@ const notoKufi = Noto_Kufi_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: 'إسلامي',
-  description: 'قران, احاديث , قصص , ادعية, اذكار',
+  title: {
+    default: 'إسلامي - القرآن الكريم، الحديث، الأذكار، مواقيت الصلاة',
+    template: '%s | إسلامي',
+  },
+  description:
+    'منصة إسلامية شاملة: القرآن الكريم مكتوباً بالرسم العثماني مع التفسير، الحديث النبوي، الأذكار والأدعية اليومية، مواقيت الصلاة، أسماء الله الحسنى، وتحديات دينية تفاعلية. تصفح واقرأ واستمع وتعلم.',
+  keywords: [
+    'إسلامي',
+    'القرآن الكريم',
+    'قرآن',
+    'تفسير',
+    'حديث نبوي',
+    'أذكار',
+    'حصن المسلم',
+    'مواقيت الصلاة',
+    'أسماء الله الحسنى',
+    'القبلة',
+    'اتجاه القبلة',
+    'تحديات دينية',
+    'إسلام',
+    'دين',
+    'تعليم إسلامي',
+    'قراءة القرآن',
+    'آية اليوم',
+    'حديث اليوم',
+  ],
+  authors: [{ name: 'Hassan Samhan', url: 'https://hassansamhan.vercel.app/' }],
+  creator: 'Hassan Samhan',
+  publisher: 'Hassan Samhan',
+  metadataBase: new URL('https://islamy-rust.vercel.app/'),
+  openGraph: {
+    type: 'website',
+    locale: 'ar_AR',
+    url: 'https://islamy-rust.vercel.app/',
+    siteName: 'إسلامي',
+    title: 'إسلامي - المنصة الإسلامية الشاملة',
+    description:
+      'القرآن الكريم، التفسير، الحديث، الأذكار، مواقيت الصلاة، أسماء الله الحسنى، وتحديات تفاعلية',
+    images: [
+      {
+        url: '/icon',
+        width: 192,
+        height: 192,
+        alt: 'إسلامي',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'إسلامي',
+    description:
+      'القرآن الكريم، التفسير، الحديث، الأذكار، مواقيت الصلاة، وأسماء الله الحسنى',
+    images: ['/icon'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     icon: '/icon',
     apple: '/icon',
+  },
+  verification: {
+    google: '-D68qZqPOhLYBLL52He4pdOs44aYGuBdz9GI2Rs6lXo',
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'إسلامي',
   },
+  category: 'education',
 };
 
 import { Providers } from '../components/providers/Providers';
