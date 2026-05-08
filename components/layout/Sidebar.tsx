@@ -69,10 +69,10 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       </nav>
 
       <div className="p-4 border-t border-[var(--border-color)] space-y-2">
-        <button className="flex items-center gap-4 px-4 py-3 w-full rounded-xl hover:bg-[#252b36] hover:text-white transition-colors text-right">
+        <Link href="/settings" onClick={onClose} className="flex items-center gap-4 px-4 py-3 w-full rounded-xl hover:bg-[#252b36] hover:text-white transition-colors text-right">
           <Settings className="w-5 h-5 text-gray-400" />
           <span>الإعدادات</span>
-        </button>
+        </Link>
         
         <div className="px-4 py-4 mt-2 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)]">
           <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-bold">Created by</p>
