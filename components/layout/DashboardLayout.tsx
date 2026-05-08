@@ -38,7 +38,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+      <div className="flex-1 flex flex-col min-w-0 h-full  relative">
         <TopHeader onMenuClick={() => setSidebarOpen(true)} />
         
         <main className="flex-1 overflow-y-auto bg-[var(--bg-main)] pb-24 transition-colors">
