@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Compass, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { Compass, MapPin, Loader2, AlertCircle, Smartphone, RotateCcw } from 'lucide-react';
 
 const MECCA = { lat: 21.4225, lng: 39.8262 };
 
@@ -16,13 +16,32 @@ function calcQibla(lat: number, lng: number): number {
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 
+const SMOOTHING = 0.2;
+
 export default function QiblaPage() {
   const [position, setPosition] = React.useState<{ lat: number; lng: number } | null>(null);
   const [error, setError] = React.useState('');
   const [qiblaAngle, setQiblaAngle] = React.useState(0);
   const [heading, setHeading] = React.useState<number | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const compassRef = React.useRef<HTMLDivElement>(null);
+  const [orientationPermission, setOrientationPermission] = React.useState<'unknown' | 'granted' | 'denied'>('unknown');
+  const headingRef = React.useRef<number | null>(null);
+
+  const requestOrientationPermission = React.useCallback(async () => {
+    const devOrientation = (DeviceOrientationEvent as any);
+    if (typeof devOrientation.requestPermission === 'function') {
+      try {
+        const result = await devOrientation.requestPermission();
+        setOrientationPermission(result === 'granted' ? 'granted' : 'denied');
+        return result === 'granted';
+      } catch {
+        setOrientationPermission('denied');
+        return false;
+      }
+    }
+    setOrientationPermission('granted');
+    return true;
+  }, []);
 
   React.useEffect(() => {
     if (!navigator.geolocation) {
@@ -35,8 +54,7 @@ export default function QiblaPage() {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setPosition({ lat: latitude, lng: longitude });
-        const qibla = calcQibla(latitude, longitude);
-        setQiblaAngle(qibla);
+        setQiblaAngle(calcQibla(latitude, longitude));
         setLoading(false);
       },
       () => {
@@ -46,18 +64,40 @@ export default function QiblaPage() {
       { enableHighAccuracy: true }
     );
 
-    if (typeof (window as any).DeviceOrientationEvent !== 'undefined') {
-      const handler = (event: DeviceOrientationEvent) => {
-        if (event.alpha !== null) {
-          setHeading(event.alpha);
-        }
-      };
-      window.addEventListener('deviceorientation', handler);
-      return () => window.removeEventListener('deviceorientation', handler);
-    }
-  }, []);
+    requestOrientationPermission().then((granted) => {
+      if (granted) {
+        const handler = (event: DeviceOrientationEvent) => {
+          let raw: number | null = null;
 
-  const compassRotation = heading !== null ? (heading - qiblaAngle) : -qiblaAngle;
+          if ('webkitCompassHeading' in event && (event as any).webkitCompassHeading !== null) {
+            raw = (event as any).webkitCompassHeading;
+          } else if (event.alpha !== null) {
+            raw = event.alpha;
+          }
+
+          if (raw !== null) {
+            const prev = headingRef.current;
+            if (prev === null) {
+              headingRef.current = raw;
+              setHeading(raw);
+            } else {
+              let diff = raw - prev;
+              if (diff > 180) diff -= 360;
+              if (diff < -180) diff += 360;
+              const smoothed = prev + diff * SMOOTHING;
+              headingRef.current = smoothed;
+              setHeading(smoothed);
+            }
+          }
+        };
+
+        window.addEventListener('deviceorientation', handler);
+        return () => window.removeEventListener('deviceorientation', handler);
+      }
+    });
+  }, [requestOrientationPermission]);
+
+  const compassRotation = heading !== null ? (qiblaAngle - heading) : -qiblaAngle;
 
   return (
     <div className="p-4 md:p-8 max-w-lg mx-auto">
@@ -93,7 +133,7 @@ export default function QiblaPage() {
             <div className="absolute inset-0 rounded-full border-4 border-[var(--border-color)] bg-[var(--bg-card)] shadow-xl" />
             
             {/* Direction labels */}
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="relative w-full h-full">
                 <span className="absolute top-3 left-1/2 -translate-x-1/2 text-xs font-bold text-red-400">N</span>
                 <span className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-[var(--text-muted)]">S</span>
@@ -113,11 +153,13 @@ export default function QiblaPage() {
               </div>
             ))}
 
-            {/* Compass needle (Kaaba pointer) */}
+            {/* Compass needle */}
             <div
-              ref={compassRef}
-              className="absolute inset-0 transition-transform duration-500 ease-out"
-              style={{ transform: `rotate(${compassRotation}deg)` }}
+              className="absolute inset-0"
+              style={{
+                transform: `rotate(${compassRotation}deg)`,
+                transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
             >
               <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
                 <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[28px] border-l-transparent border-r-transparent border-b-emerald-500 drop-shadow-lg" />
@@ -127,21 +169,24 @@ export default function QiblaPage() {
               </div>
             </div>
 
-            {/* Center dot */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-5 h-5 rounded-full bg-emerald-500 border-4 border-[var(--bg-card)] shadow-lg" />
-            </div>
-
-            {/* Kaaba icon at the tip */}
+            {/* Kaaba icon */}
             <div
               className="absolute inset-0 pointer-events-none"
-              style={{ transform: `rotate(${compassRotation}deg)` }}
+              style={{
+                transform: `rotate(${compassRotation}deg)`,
+                transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
             >
-              <div className="absolute top-1 left-1/2 -translate-x-1/2 -translate-y-6">
-                <div className="w-8 h-8 rounded-md bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center">
-                  <span className="text-emerald-400 text-xs font-black">ﷲ</span>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1">
+                <div className="w-6 h-6 rounded-md bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center">
+                  <span className="text-emerald-400 text-[10px] font-black">ﷲ</span>
                 </div>
               </div>
+            </div>
+
+            {/* Center dot */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-5 h-5 rounded-full bg-emerald-500 border-4 border-[var(--bg-card)] shadow-lg" />
             </div>
           </div>
 
@@ -161,14 +206,32 @@ export default function QiblaPage() {
             {heading !== null && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-[var(--text-muted)]">اتجاه الجهاز</span>
-                <span className="text-sm font-bold text-[var(--text-primary)]">{heading.toFixed(0)}°</span>
+                <span className="text-sm font-bold text-[var(--text-primary)]">{Math.round(heading)}°</span>
               </div>
             )}
           </div>
 
           {heading === null && (
+            <div className="mt-6 space-y-3">
+              <p className="text-xs text-[var(--text-muted)] flex items-center justify-center gap-2">
+                <RotateCcw className="w-4 h-4" />
+                حرّك الجهاز على شكل رقم 8 لمعايرة البوصلة
+              </p>
+              {navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') ? (
+                <button
+                  onClick={requestOrientationPermission}
+                  className="px-6 py-2 bg-emerald-500/10 text-emerald-400 rounded-xl text-sm font-bold hover:bg-emerald-500/20 transition-colors"
+                >
+                  <Smartphone className="w-4 h-4 inline ml-2" />
+                  السماح بحساس الحركة
+                </button>
+              ) : null}
+            </div>
+          )}
+
+          {heading !== null && (
             <p className="text-xs text-[var(--text-muted)] mt-4">
-              حرّك الجهاز لتحديث الاتجاه — قد يحتاج الجهاز إلى معايرة البوصلة
+              أمسك الجهاز بشكل مسطح ومستوي للحصول على أدق اتجاه
             </p>
           )}
         </div>

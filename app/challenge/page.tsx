@@ -28,24 +28,27 @@ interface Session {
 
 type Stage = 'idle' | 'waiting' | 'playing' | 'submitted' | 'done';
 
+const TIME_PER_QUESTION = 30;
+
 export default function ChallengePage() {
   const { user } = useAuth();
   const [stage, setStage] = React.useState<Stage>('idle');
   const [session, setSession] = React.useState<Session | null>(null);
   const [answers, setAnswers] = React.useState<Record<number, number>>({});
+  const [currentQ, setCurrentQ] = React.useState(0);
+  const [timeLeft, setTimeLeft] = React.useState(TIME_PER_QUESTION);
   const [myScore, setMyScore] = React.useState<number | null>(null);
   const [opponentScore, setOpponentScore] = React.useState<number | null>(null);
   const [opponentUsername, setOpponentUsername] = React.useState('');
-  const [timer, setTimer] = React.useState(300);
   const [error, setError] = React.useState('');
 
   const pollingRef = React.useRef<ReturnType<typeof setInterval>>(undefined);
-  const timerRef = React.useRef<ReturnType<typeof setInterval>>(undefined);
+  const questionTimerRef = React.useRef<ReturnType<typeof setInterval>>(undefined);
 
   React.useEffect(() => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (questionTimerRef.current) clearInterval(questionTimerRef.current);
     };
   }, []);
 
@@ -84,25 +87,56 @@ export default function ChallengePage() {
     setSession(s);
     setOpponentUsername(isPlayer1 ? s.player2_username : s.player1_username);
     setAnswers({});
-    setTimer(300);
+    setCurrentQ(0);
+    setTimeLeft(TIME_PER_QUESTION);
     setStage('playing');
+    startQuestionTimer();
+  };
 
-    timerRef.current = setInterval(() => {
-      setTimer(prev => {
-        if (prev <= 1) { clearInterval(timerRef.current); return 0; }
+  const startQuestionTimer = () => {
+    if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+    questionTimerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(questionTimerRef.current);
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
   };
 
   const selectAnswer = (questionId: number, optionIndex: number) => {
-    setAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
+    setAnswers(prev => {
+      if (questionId in prev) return prev;
+      return { ...prev, [questionId]: optionIndex };
+    });
+    if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+    setTimeout(() => goToNext(), 400);
   };
+
+  const goToNext = () => {
+    if (!session) return;
+    const next = currentQ + 1;
+    if (next >= session.questions.length) {
+      submitAnswers();
+    } else {
+      setCurrentQ(next);
+      setTimeLeft(TIME_PER_QUESTION);
+      startQuestionTimer();
+    }
+  };
+
+  React.useEffect(() => {
+    if (timeLeft === 0 && stage === 'playing') {
+      goToNext();
+    }
+  }, [timeLeft]);
 
   const submitAnswers = async () => {
     if (!session || !user) return;
     setStage('submitted');
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (questionTimerRef.current) clearInterval(questionTimerRef.current);
 
     const formatted = Object.entries(answers).map(([qId, selected]) => ({
       question_id: Number(qId), selected
@@ -139,8 +173,6 @@ export default function ChallengePage() {
   }
 
   const allAnswered = session && Object.keys(answers).length === session.questions.length;
-  const minutes = Math.floor(timer / 60);
-  const seconds = timer % 60;
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
@@ -204,54 +236,91 @@ export default function ChallengePage() {
 
       {stage === 'playing' && session && (
         <div>
+          {/* Header bar */}
           <div className="flex items-center justify-between mb-6 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4">
             <div className="flex items-center gap-2">
               <Swords className="w-5 h-5 text-amber-400" />
               <span className="font-bold text-[var(--text-primary)]">مواجهة: {opponentUsername}</span>
             </div>
-            <div className="flex items-center gap-2 text-amber-400">
-              <Timer className="w-5 h-5" />
-              <span className="font-black text-lg font-sans">{minutes}:{seconds.toString().padStart(2, '0')}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-[var(--text-muted)]">{currentQ + 1}/{session.questions.length}</span>
+              <div className="flex items-center gap-1 text-amber-400" dir="ltr">
+                <Timer className="w-4 h-4" />
+                <span className={`font-black text-lg font-sans tabular-nums ${timeLeft <= 5 ? 'text-red-400' : ''}`}>
+                  {timeLeft}
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-6 mb-8">
-            {session.questions.map((q, idx) => (
-              <div key={q.id} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-7 h-7 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs font-bold">{idx + 1}</span>
-                  <p className="font-bold text-[var(--text-primary)]">{q.q}</p>
-                </div>
-                <div className="space-y-2 pr-9">
-                  {q.answers.map((a, ai) => (
+          {/* Timer bar */}
+          <div className="h-2 bg-[var(--bg-card)] rounded-full mb-6 overflow-hidden border border-[var(--border-color)]">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${
+                timeLeft <= 5 ? 'bg-red-500' : 'bg-amber-400'
+              }`}
+              style={{ width: `${(timeLeft / TIME_PER_QUESTION) * 100}%` }}
+            />
+          </div>
+
+          {/* Progress dots */}
+          <div className="flex items-center justify-center gap-1.5 mb-6">
+            {session.questions.map((q, i) => (
+              <div
+                key={q.id}
+                className={`w-6 h-1.5 rounded-full transition-all ${
+                  i === currentQ
+                    ? 'bg-amber-400 w-8'
+                    : answers[q.id] !== undefined
+                      ? 'bg-emerald-500'
+                      : 'bg-[var(--border-color)]'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Current question */}
+          {session.questions[currentQ] && (
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm font-bold shrink-0">
+                  {currentQ + 1}
+                </span>
+                <p className="font-bold text-lg text-[var(--text-primary)]">{session.questions[currentQ].q}</p>
+              </div>
+              <div className="space-y-3 pr-10">
+                {session.questions[currentQ].answers.map((a, ai) => {
+                  const isSelected = answers[session.questions[currentQ].id] === ai;
+                  return (
                     <button
                       key={ai}
-                      onClick={() => selectAnswer(q.id, ai)}
-                      className={`w-full text-right p-3 rounded-xl border transition-all text-sm ${
-                        answers[q.id] === ai
+                      onClick={() => selectAnswer(session.questions[currentQ].id, ai)}
+                      disabled={session.questions[currentQ].id in answers}
+                      className={`w-full text-right p-4 rounded-xl border transition-all text-base ${
+                        isSelected
                           ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold'
-                          : 'bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-primary)] hover:border-amber-500/20'
+                          : session.questions[currentQ].id in answers
+                            ? 'bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-muted)] cursor-default'
+                            : 'bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-primary)] hover:border-amber-500/20 hover:bg-amber-500/5'
                       }`}
                     >
                       {a.answer}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
 
-          <button
-            onClick={submitAnswers}
-            disabled={!allAnswered}
-            className={`w-full py-4 rounded-2xl font-black text-lg transition-all ${
-              allAnswered
-                ? 'bg-emerald-500 hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/20'
-                : 'bg-[var(--bg-card)] text-[var(--text-muted)] cursor-not-allowed border border-[var(--border-color)]'
-            }`}
-          >
-            {allAnswered ? 'تأكيد الإجابات' : `أجب على جميع الأسئلة (${Object.keys(answers).length}/${session.questions.length})`}
-          </button>
+          {/* Skip to next (if answer selected) */}
+          {session.questions[currentQ]?.id in answers && (
+            <button
+              onClick={goToNext}
+              className="w-full mt-4 py-3 bg-emerald-500/10 text-emerald-400 rounded-xl font-bold hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+            >
+              {currentQ + 1 >= session.questions.length ? 'عرض النتيجة' : 'التالي ←'}
+            </button>
+          )}
         </div>
       )}
 
