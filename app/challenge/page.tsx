@@ -407,11 +407,16 @@ export default function ChallengePage() {
             <h3 className="text-xl font-bold text-[var(--text-primary)] mb-4">تفاصيل الأسئلة</h3>
             {session.questions.map((q, idx) => {
               const isPlayer1 = session.player1_username === user?.username;
-              const myAnsActual = isPlayer1 ? session.player1_answers?.[idx] : session.player2_answers?.[idx];
-              const oppAnsActual = isPlayer1 ? session.player2_answers?.[idx] : session.player1_answers?.[idx];
+              // Use local myAnswers for current user (always accurate),
+              // use session data for opponent
+              const myAns = myAnswers[idx];
+              const oppAns = isPlayer1
+                ? (session.player2_answers?.[idx] ?? undefined)
+                : (session.player1_answers?.[idx] ?? undefined);
               const correct = q.correctIndex;
-              const iGotItRight = myAnsActual === correct;
-              const iAnswered = myAnsActual !== undefined && myAnsActual !== -1;
+              const iGotItRight = myAns === correct;
+              const iAnswered = myAns !== undefined && myAns !== -1;
+              const oppAnswered = oppAns !== undefined && oppAns !== -1;
 
               return (
                 <div key={q.id} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5">
@@ -425,8 +430,8 @@ export default function ChallengePage() {
                   <div className="space-y-1.5 pr-9">
                     {q.answers.map((a, ai) => {
                       const isCorrect = ai === correct;
-                      const iSelected = iAnswered && myAnsActual === ai;
-                      const oppSelected = oppAnsActual === ai;
+                      const iSelected = iAnswered && myAns === ai;
+                      const oppSelected = oppAnswered && oppAns === ai;
                       let bgClass = 'bg-[var(--bg-input)]';
                       let textClass = 'text-[var(--text-muted)]';
                       let icon = null;
