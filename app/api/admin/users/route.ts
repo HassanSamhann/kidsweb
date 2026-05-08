@@ -51,13 +51,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'user_id and stars required' }, { status: 400 });
       }
 
-      // Update both users.stars (lifetime) and log in user_activities (monthly)
-      const { data: current } = await supabase
-        .from('users')
-        .select('stars')
-        .eq('id', user_id)
-        .single();
-      const diff = stars - (current?.stars || 0);
+      // Get current monthly stars, compute diff, log in user_activities
+      const { data: currentMonthly } = await supabase.rpc('get_user_monthly_stars', { p_user_id: user_id });
+      const currentMonthlyVal = typeof currentMonthly === 'number' ? currentMonthly : 0;
+      const diff = stars - currentMonthlyVal;
 
       const { error: updateErr } = await supabase
         .from('users')

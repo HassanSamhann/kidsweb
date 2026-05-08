@@ -9,6 +9,7 @@ interface AdminUser {
   id: string;
   username: string;
   stars: number;
+  monthly_stars: number;
   role: string | null;
   created_at: string;
 }
@@ -44,7 +45,7 @@ export default function AdminPage() {
       const starsMap: Record<string, string> = {};
       const usernameMap: Record<string, string> = {};
       for (const u of data.users) {
-        starsMap[u.id] = String(u.stars);
+        starsMap[u.id] = String(u.monthly_stars ?? u.stars);
         usernameMap[u.id] = u.username;
       }
       setEditStars(starsMap);
