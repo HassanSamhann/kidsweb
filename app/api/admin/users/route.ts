@@ -115,6 +115,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'user_id required' }, { status: 400 });
       }
 
+      // Cascade delete all related records
+      await supabase.from('user_activities').delete().eq('user_id', user_id);
+      await supabase.from('challenge_queue').delete().eq('user_id', user_id);
+      await supabase.from('challenge_sessions').delete().or(`player1_id.eq.${user_id},player2_id.eq.${user_id}`);
+
       const { error } = await supabase.from('users').delete().eq('id', user_id);
       if (error) throw error;
       return NextResponse.json({ ok: true });
