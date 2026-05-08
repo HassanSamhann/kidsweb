@@ -63,9 +63,6 @@ export async function POST(req: NextRequest) {
         if (oppAnswers[i] === questions[i].correctIndex) oppScore++;
       }
 
-      const myTotalStars = myScore + ((updated as any).player1_score || 0);
-      const oppTotalStars = oppScore + ((updated as any).player2_score || 0);
-
       let winnerId: string | null = null;
       if (myScore > oppScore) winnerId = user_id;
       else if (oppScore > myScore) winnerId = isPlayer1 ? updated.player2_id : updated.player1_id;
@@ -83,10 +80,13 @@ export async function POST(req: NextRequest) {
 
       if (winnerId) {
         const loserId = winnerId === updated.player1_id ? updated.player2_id : updated.player1_id;
-        await supabase.rpc('transfer_stars', { winner_id: winnerId, loser_id: loserId, amount: 10 });
+        // Deduct from loser's monthly stars (min 0)
+        const { data: loserMonthly } = await supabase.rpc('get_user_monthly_stars', { p_user_id: loserId });
+        const loserStars = loserMonthly || 0;
+        const deduction = Math.min(10, loserStars);
         await supabase.from('user_activities').insert([
           { user_id: winnerId, activity_type: 'challenge_win', stars: 10, metadata: { opponent_id: loserId } },
-          { user_id: loserId, activity_type: 'challenge_lose', stars: 0, metadata: { opponent_id: winnerId } },
+          { user_id: loserId, activity_type: 'challenge_lose', stars: -deduction, metadata: { opponent_id: winnerId } },
         ]);
       }
 

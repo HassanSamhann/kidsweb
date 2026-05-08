@@ -11,7 +11,7 @@ const STAR_VALUES: Record<ActivityType, number> = {
   hadith_read: 3,
   daily_visit: 1,
   challenge_win: 10,
-  challenge_lose: 0,
+  challenge_lose: -10,
 };
 
 const ACTIVITY_NAMES: Record<ActivityType, string> = {
