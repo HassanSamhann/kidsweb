@@ -117,23 +117,13 @@ export default function QuranReadPage() {
             {loadingAyahs ? (
               <div className="text-center text-[var(--text-muted)] py-12">جاري تحميل الآيات...</div>
             ) : (
-              <div className="space-y-4">
+              <div>
                 {currentSurahAyat.map((ayah) => (
-                  <div
-                    key={ayah.id}
-                    className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 hover:border-emerald-500/30 transition-all group"
-                  >
-                    <div className="flex items-start gap-4">
-                      <span className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm font-bold border border-emerald-500/20">
-                        {ayah.aya_no}
-                      </span>
-                      <p className="text-2xl md:text-3xl leading-[2.2] text-[var(--text-primary)] font-arabic flex-1 text-right">
-                        {ayah.aya_text}
-                      </p>
-                    </div>
-                    <div className="mt-3 text-xs text-[var(--text-muted)] text-left">
-                      صفحة {ayah.page}
-                    </div>
+                  <div key={ayah.id} className="mb-6 last:mb-0">
+                    <p className="text-2xl md:text-3xl leading-[2.5] text-[var(--text-primary)] font-arabic text-right">
+                      {ayah.aya_text}
+                      <span className="text-sm md:text-base text-[var(--text-muted)] mr-2 align-middle" style={{ fontFamily: 'serif' }}>﴿{ayah.aya_no}﴾</span>
+                    </p>
                   </div>
                 ))}
               </div>

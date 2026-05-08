@@ -37,7 +37,7 @@ export function LoginForm() {
       }
       
       setAuthUser(user);
-      router.push('/stories');
+      router.push('/');
     } catch (err) {
       setError('حدث خطأ في الاتصال');
     } finally {

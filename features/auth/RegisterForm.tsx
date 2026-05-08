@@ -43,7 +43,7 @@ export function RegisterForm() {
       }
       
       setAuthUser(user);
-      router.push('/stories'); // Redirect to home/stories
+      router.push('/');
     } catch (err) {
       setError('حدث خطأ في الاتصال');
     } finally {
