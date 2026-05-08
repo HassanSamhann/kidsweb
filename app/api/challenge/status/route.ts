@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase-admin';
+import { cleanupStaleSessions } from '../../../../lib/cleanup-challenges';
 
 export async function GET(req: NextRequest) {
   try {
+    await cleanupStaleSessions();
     const userId = req.nextUrl.searchParams.get('user_id');
     if (!userId) {
       return NextResponse.json({ error: 'Missing user_id' }, { status: 400 });

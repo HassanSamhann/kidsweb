@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase-admin';
+import { cleanupStaleSessions } from '../../../../lib/cleanup-challenges';
 
 export async function DELETE(req: NextRequest) {
   try {
+    await cleanupStaleSessions();
     const { user_id } = await req.json();
     if (!user_id) {
       return NextResponse.json({ error: 'Missing user_id' }, { status: 400 });

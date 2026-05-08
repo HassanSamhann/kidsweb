@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase-admin';
+import { cleanupStaleSessions } from '../../../../lib/cleanup-challenges';
 
 export async function POST(req: NextRequest) {
   try {
+    await cleanupStaleSessions();
     const { session_id, user_id, answers } = await req.json();
     if (!session_id || !user_id || !answers) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase-admin';
+import { cleanupStaleSessions } from '../../../../lib/cleanup-challenges';
 import quizData from '../../../../data/Islamic-Quizzes.json';
 
 function pickRandomQuestions(count: number) {
@@ -23,6 +24,7 @@ function pickRandomQuestions(count: number) {
 
 export async function POST(req: NextRequest) {
   try {
+    await cleanupStaleSessions();
     const { user_id, username } = await req.json();
     if (!user_id || !username) {
       return NextResponse.json({ error: 'Missing user_id or username' }, { status: 400 });
