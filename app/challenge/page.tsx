@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Swords, Loader2, CheckCircle2, XCircle, Trophy, Star, Timer, Users } from 'lucide-react';
+import { Swords, Loader2, Trophy, Star, Timer, Users, CheckCircle2, XCircle, MinusCircle, Eye } from 'lucide-react';
 
 interface Question {
   id: number;
@@ -20,13 +20,13 @@ interface Session {
   questions: Question[];
   player1_score: number;
   player2_score: number;
-  player1_done: boolean;
-  player2_done: boolean;
+  player1_answers: Record<string, number>;
+  player2_answers: Record<string, number>;
   winner_id: string | null;
   status: string;
 }
 
-type Stage = 'idle' | 'waiting' | 'playing' | 'submitted' | 'done';
+type Stage = 'idle' | 'waiting' | 'playing' | 'review';
 
 const TIME_PER_QUESTION = 30;
 
@@ -34,21 +34,31 @@ export default function ChallengePage() {
   const { user } = useAuth();
   const [stage, setStage] = React.useState<Stage>('idle');
   const [session, setSession] = React.useState<Session | null>(null);
-  const [answers, setAnswers] = React.useState<Record<number, number>>({});
   const [currentQ, setCurrentQ] = React.useState(0);
   const [timeLeft, setTimeLeft] = React.useState(TIME_PER_QUESTION);
+  const [myAnswers, setMyAnswers] = React.useState<Record<number, number>>({});
+  const [waitingForOpponent, setWaitingForOpponent] = React.useState(false);
+  const [opponentUsername, setOpponentUsername] = React.useState('');
   const [myScore, setMyScore] = React.useState<number | null>(null);
   const [opponentScore, setOpponentScore] = React.useState<number | null>(null);
-  const [opponentUsername, setOpponentUsername] = React.useState('');
   const [error, setError] = React.useState('');
 
   const pollingRef = React.useRef<ReturnType<typeof setInterval>>(undefined);
   const questionTimerRef = React.useRef<ReturnType<typeof setInterval>>(undefined);
+  const waitPollRef = React.useRef<ReturnType<typeof setInterval>>(undefined);
+
+  const sessionRef = React.useRef(session);
+  sessionRef.current = session;
+  const currentQRef = React.useRef(currentQ);
+  currentQRef.current = currentQ;
+  const userRef = React.useRef(user);
+  userRef.current = user;
 
   React.useEffect(() => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
       if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+      if (waitPollRef.current) clearInterval(waitPollRef.current);
     };
   }, []);
 
@@ -72,8 +82,9 @@ export default function ChallengePage() {
 
   const startPolling = () => {
     pollingRef.current = setInterval(async () => {
-      if (!user) return;
-      const res = await fetch(`/api/challenge/status?user_id=${user.id}`);
+      const u = userRef.current;
+      if (!u) return;
+      const res = await fetch(`/api/challenge/status?user_id=${u.id}`);
       const data = await res.json();
       if (data.session) {
         clearInterval(pollingRef.current);
@@ -85,16 +96,18 @@ export default function ChallengePage() {
   const startGame = (s: any) => {
     const isPlayer1 = s.player1_id === user?.id;
     setSession(s);
-    setOpponentUsername(isPlayer1 ? s.player2_username : s.player1_username);
-    setAnswers({});
+    setMyAnswers({});
     setCurrentQ(0);
     setTimeLeft(TIME_PER_QUESTION);
+    setWaitingForOpponent(false);
+    setOpponentUsername(isPlayer1 ? s.player2_username : s.player1_username);
     setStage('playing');
     startQuestionTimer();
   };
 
   const startQuestionTimer = () => {
     if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+    setTimeLeft(TIME_PER_QUESTION);
     questionTimerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -106,60 +119,90 @@ export default function ChallengePage() {
     }, 1000);
   };
 
-  const selectAnswer = (questionId: number, optionIndex: number) => {
-    setAnswers(prev => {
-      if (questionId in prev) return prev;
-      return { ...prev, [questionId]: optionIndex };
-    });
-    if (questionTimerRef.current) clearInterval(questionTimerRef.current);
-    setTimeout(() => goToNext(), 400);
-  };
-
-  const goToNext = () => {
-    if (!session) return;
-    const next = currentQ + 1;
-    if (next >= session.questions.length) {
-      submitAnswers();
-    } else {
-      setCurrentQ(next);
-      setTimeLeft(TIME_PER_QUESTION);
-      startQuestionTimer();
-    }
-  };
+  const handleTimeout = React.useCallback(() => {
+    handleAnswerAction(-1);
+  }, []);
 
   React.useEffect(() => {
-    if (timeLeft === 0 && stage === 'playing') {
-      goToNext();
+    if (timeLeft === 0 && stage === 'playing' && !waitingForOpponent) {
+      handleTimeout();
     }
-  }, [timeLeft]);
+  }, [timeLeft, stage, waitingForOpponent, handleTimeout]);
 
-  const submitAnswers = async () => {
-    if (!session || !user) return;
-    setStage('submitted');
+  const handleAnswerAction = async (selected: number) => {
+    const s = sessionRef.current;
+    const u = userRef.current;
+    if (!s || !u) return;
     if (questionTimerRef.current) clearInterval(questionTimerRef.current);
 
-    const formatted = Object.entries(answers).map(([qId, selected]) => ({
-      question_id: Number(qId), selected
-    }));
-
-    const res = await fetch('/api/challenge/submit', {
+    const qIdx = currentQRef.current;
+    const res = await fetch('/api/challenge/answer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: session.id, user_id: user.id, answers: formatted }),
+      body: JSON.stringify({ session_id: s.id, user_id: u.id, q_index: qIdx, selected }),
     });
     const data = await res.json();
-    setMyScore(data.score);
 
-    const pollDone = setInterval(async () => {
-      const r = await fetch(`/api/challenge/session/${session.id}`);
-      const s: Session = await r.json();
-      if (s.status === 'completed') {
-        clearInterval(pollDone);
-        const isP1 = s.player1_id === user.id;
-        setOpponentScore(isP1 ? s.player2_score : s.player1_score);
-        setStage('done');
+    setMyAnswers(prev => ({ ...prev, [qIdx]: selected }));
+
+    if (data.completed) {
+      setMyScore(data.my_score);
+      setOpponentScore(data.opponent_score);
+      setStage('review');
+      return;
+    }
+
+    if (data.opponent_answered_this) {
+      advanceToNext();
+    } else {
+      setWaitingForOpponent(true);
+      startWaitPolling();
+    }
+  };
+
+  const startWaitPolling = () => {
+    if (waitPollRef.current) clearInterval(waitPollRef.current);
+    waitPollRef.current = setInterval(async () => {
+      const s = sessionRef.current;
+      const u = userRef.current;
+      const qIdx = currentQRef.current;
+      if (!s || !u) return;
+
+      const res = await fetch(`/api/challenge/session/${s.id}`);
+      const fresh: Session = await res.json();
+
+      if (fresh.status === 'completed') {
+        clearInterval(waitPollRef.current);
+        const p1 = u.id === fresh.player1_id;
+        setMyScore(p1 ? fresh.player1_score : fresh.player2_score);
+        setOpponentScore(p1 ? fresh.player2_score : fresh.player1_score);
+        setSession(fresh);
+        setWaitingForOpponent(false);
+        setStage('review');
+        return;
       }
-    }, 2000);
+
+      const isPlayer1 = fresh.player1_id === u.id;
+      const oppAnswers = isPlayer1 ? (fresh.player2_answers || {}) : (fresh.player1_answers || {});
+      if (oppAnswers[qIdx] !== undefined) {
+        clearInterval(waitPollRef.current);
+        setWaitingForOpponent(false);
+        advanceToNext();
+      }
+    }, 1500);
+  };
+
+  const advanceToNext = () => {
+    const s = sessionRef.current;
+    if (!s) return;
+    const next = currentQRef.current + 1;
+    if (next >= s.questions.length) {
+      startWaitPolling();
+    } else {
+      setCurrentQ(next);
+      setWaitingForOpponent(false);
+      startQuestionTimer();
+    }
   };
 
   if (!user) {
@@ -172,11 +215,8 @@ export default function ChallengePage() {
     );
   }
 
-  const allAnswered = session && Object.keys(answers).length === session.questions.length;
-
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400">
           <Swords className="w-8 h-8" />
@@ -234,9 +274,8 @@ export default function ChallengePage() {
         </div>
       )}
 
-      {stage === 'playing' && session && (
+      {stage === 'playing' && session && !waitingForOpponent && (
         <div>
-          {/* Header bar */}
           <div className="flex items-center justify-between mb-6 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4">
             <div className="flex items-center gap-2">
               <Swords className="w-5 h-5 text-amber-400" />
@@ -253,7 +292,6 @@ export default function ChallengePage() {
             </div>
           </div>
 
-          {/* Timer bar */}
           <div className="h-2 bg-[var(--bg-card)] rounded-full mb-6 overflow-hidden border border-[var(--border-color)]">
             <div
               className={`h-full rounded-full transition-all duration-1000 ${
@@ -263,7 +301,6 @@ export default function ChallengePage() {
             />
           </div>
 
-          {/* Progress dots */}
           <div className="flex items-center justify-center gap-1.5 mb-6">
             {session.questions.map((q, i) => (
               <div
@@ -271,7 +308,7 @@ export default function ChallengePage() {
                 className={`w-6 h-1.5 rounded-full transition-all ${
                   i === currentQ
                     ? 'bg-amber-400 w-8'
-                    : answers[q.id] !== undefined
+                    : myAnswers[i] !== undefined
                       ? 'bg-emerald-500'
                       : 'bg-[var(--border-color)]'
                 }`}
@@ -279,7 +316,6 @@ export default function ChallengePage() {
             ))}
           </div>
 
-          {/* Current question */}
           {session.questions[currentQ] && (
             <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -290,80 +326,150 @@ export default function ChallengePage() {
               </div>
               <div className="space-y-3 pr-10">
                 {session.questions[currentQ].answers.map((a, ai) => {
-                  const isSelected = answers[session.questions[currentQ].id] === ai;
+                  const alreadyAnswered = myAnswers[currentQ] !== undefined;
+                  const isSelected = myAnswers[currentQ] === ai;
+                  const isCorrect = session.questions[currentQ].correctIndex === ai;
                   return (
                     <button
                       key={ai}
-                      onClick={() => selectAnswer(session.questions[currentQ].id, ai)}
-                      disabled={session.questions[currentQ].id in answers}
+                      onClick={() => handleAnswerAction(ai)}
+                      disabled={alreadyAnswered}
                       className={`w-full text-right p-4 rounded-xl border transition-all text-base ${
-                        isSelected
-                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold'
-                          : session.questions[currentQ].id in answers
-                            ? 'bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-muted)] cursor-default'
+                        alreadyAnswered
+                          ? isCorrect
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold'
+                            : isSelected
+                              ? 'bg-red-500/10 border-red-500/30 text-red-400 font-bold'
+                              : 'bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-muted)]'
+                          : isSelected
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold'
                             : 'bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-primary)] hover:border-amber-500/20 hover:bg-amber-500/5'
                       }`}
                     >
-                      {a.answer}
+                      <span className="flex items-center gap-2">
+                        {a.answer}
+                        {alreadyAnswered && isCorrect && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                        {alreadyAnswered && isSelected && !isCorrect && <XCircle className="w-4 h-4 shrink-0" />}
+                      </span>
                     </button>
                   );
                 })}
               </div>
             </div>
           )}
-
-          {/* Skip to next (if answer selected) */}
-          {session.questions[currentQ]?.id in answers && (
-            <button
-              onClick={goToNext}
-              className="w-full mt-4 py-3 bg-emerald-500/10 text-emerald-400 rounded-xl font-bold hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
-            >
-              {currentQ + 1 >= session.questions.length ? 'عرض النتيجة' : 'التالي ←'}
-            </button>
-          )}
         </div>
       )}
 
-      {stage === 'submitted' && (
-        <div className="text-center py-20">
+      {stage === 'playing' && waitingForOpponent && (
+        <div className="text-center py-16">
           <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">في انتظار نتيجة الخصم...</h2>
-          <p className="text-[var(--text-muted)]">نقاطك: {myScore} / {session?.questions.length}</p>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">في انتظار الخصم...</h2>
+          <p className="text-[var(--text-muted)]">{opponentUsername} لم يجب بعد على هذا السؤال</p>
+          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-[var(--text-muted)]">
+            <Eye className="w-4 h-4" />
+            <span>سيتم نقلك للسؤال التالي تلقائياً</span>
+          </div>
         </div>
       )}
 
-      {stage === 'done' && myScore !== null && opponentScore !== null && (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-6 border-4 border-amber-500/20">
-            <Trophy className="w-12 h-12 text-amber-400" />
-          </div>
-          <h2 className="text-3xl font-black text-[var(--text-primary)] mb-4">
-            {myScore > opponentScore ? 'فزت! 🎉' : myScore < opponentScore ? 'خسرت 😢' : 'تعادل!'}
-          </h2>
-          <div className="flex items-center justify-center gap-8 mb-8">
-            <div className="text-center">
-              <p className="text-4xl font-black text-emerald-400">{myScore}</p>
-              <p className="text-sm text-[var(--text-muted)]">نقاطك</p>
+      {stage === 'review' && session && myScore !== null && opponentScore !== null && (
+        <div>
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4 border-4 border-amber-500/20">
+              <Trophy className="w-10 h-10 text-amber-400" />
             </div>
-            <div className="text-3xl text-[var(--text-muted)]">:</div>
-            <div className="text-center">
-              <p className="text-4xl font-black text-blue-400">{opponentScore}</p>
-              <p className="text-sm text-[var(--text-muted)]">{opponentUsername}</p>
+            <h2 className="text-3xl font-black text-[var(--text-primary)] mb-2">
+              {myScore > opponentScore ? 'فزت! 🎉' : myScore < opponentScore ? 'خسرت 😢' : 'تعادل!'}
+            </h2>
+            <div className="flex items-center justify-center gap-6">
+              <div className="text-center">
+                <p className="text-3xl font-black text-emerald-400">{myScore}</p>
+                <p className="text-sm text-[var(--text-muted)]">نقاطك</p>
+              </div>
+              <div className="text-2xl text-[var(--text-muted)]">:</div>
+              <div className="text-center">
+                <p className="text-3xl font-black text-blue-400">{opponentScore}</p>
+                <p className="text-sm text-[var(--text-muted)]">{opponentUsername}</p>
+              </div>
             </div>
+            {myScore > opponentScore && (
+              <div className="mt-4 bg-amber-500/10 text-amber-400 px-6 py-3 rounded-2xl inline-flex items-center gap-2 font-bold border border-amber-500/20">
+                <Star className="w-5 h-5 fill-amber-400" /> +10 نجوم!
+              </div>
+            )}
           </div>
-          {myScore > opponentScore && (
-            <div className="bg-amber-500/10 text-amber-400 px-6 py-3 rounded-2xl inline-flex items-center gap-2 font-bold border border-amber-500/20">
-              <Star className="w-5 h-5 fill-amber-400" /> +10 نجوم!
-            </div>
-          )}
-          <div className="mt-8">
-            <button
-              onClick={() => { setStage('idle'); setSession(null); setAnswers({}); setMyScore(null); setOpponentScore(null); }}
-              className="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-black rounded-2xl font-black text-lg transition-all shadow-xl shadow-amber-500/20"
-            >
-              تحدٍ جديد
-            </button>
+
+          <div className="space-y-4 mb-8">
+            <h3 className="text-xl font-bold text-[var(--text-primary)] mb-4">تفاصيل الأسئلة</h3>
+            {session.questions.map((q, idx) => {
+              const isPlayer1 = session.player1_username === user?.username;
+              const myAnsActual = isPlayer1 ? session.player1_answers?.[idx] : session.player2_answers?.[idx];
+              const oppAnsActual = isPlayer1 ? session.player2_answers?.[idx] : session.player1_answers?.[idx];
+              const correct = q.correctIndex;
+              const iGotItRight = myAnsActual === correct;
+              const iAnswered = myAnsActual !== undefined && myAnsActual !== -1;
+
+              return (
+                <div key={q.id} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-7 h-7 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</span>
+                    <p className="font-bold text-[var(--text-primary)]">{q.q}</p>
+                    <span className={`mr-auto ${iGotItRight ? 'text-emerald-400' : iAnswered ? 'text-red-400' : 'text-gray-500'}`}>
+                      {iGotItRight ? <CheckCircle2 className="w-5 h-5" /> : iAnswered ? <XCircle className="w-5 h-5" /> : <MinusCircle className="w-5 h-5" />}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5 pr-9">
+                    {q.answers.map((a, ai) => {
+                      const isCorrect = ai === correct;
+                      const iSelected = iAnswered && myAnsActual === ai;
+                      const oppSelected = oppAnsActual === ai;
+                      let bgClass = 'bg-[var(--bg-input)]';
+                      let textClass = 'text-[var(--text-muted)]';
+                      let icon = null;
+
+                      if (isCorrect) {
+                        bgClass = 'bg-emerald-500/10';
+                        textClass = 'text-emerald-400 font-bold';
+                        icon = <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
+                      }
+                      if (iSelected && !isCorrect) {
+                        bgClass = 'bg-red-500/10';
+                        textClass = 'text-red-400 font-bold';
+                        icon = <XCircle className="w-4 h-4 text-red-400 shrink-0" />;
+                      }
+
+                      return (
+                        <div
+                          key={ai}
+                          className={`w-full text-right p-3 rounded-xl border text-sm flex items-center justify-between gap-2 ${bgClass} ${textClass} ${isCorrect ? 'border-emerald-500/30' : iSelected && !isCorrect ? 'border-red-500/30' : 'border-[var(--border-color)]'}`}
+                        >
+                          <span className="flex items-center gap-2">
+                            {a.answer}
+                            {icon}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs">
+                            {oppSelected && (
+                              <span className={`flex items-center gap-1 ${ai === correct ? 'text-emerald-400' : 'text-red-400'}`}>
+                                <Eye className="w-3 h-3" />
+                                {opponentUsername}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
+
+          <button
+            onClick={() => { setStage('idle'); setSession(null); setMyAnswers({}); setMyScore(null); setOpponentScore(null); setCurrentQ(0); setWaitingForOpponent(false); }}
+            className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-black rounded-2xl font-black text-lg transition-all shadow-xl shadow-amber-500/20"
+          >
+            تحدٍ جديد
+          </button>
         </div>
       )}
     </div>
