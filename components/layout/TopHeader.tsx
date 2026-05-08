@@ -7,6 +7,7 @@ import { Search, Radio, Globe, Moon, Sun, User as UserIcon, Menu, LogOut, Chevro
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getUserStats } from '../../lib/activity';
+import { InstallPWA } from '../InstallPWA';
 
 export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, logout } = useAuth();
@@ -73,7 +74,9 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
         <button className="p-2 text-gray-400 hover:text-white transition" title="English">
           <Globe className="w-5 h-5" />
         </button>
-        
+
+        <InstallPWA />
+
         <button 
           onClick={toggleTheme}
           className="p-2 text-gray-400 hover:text-white transition" 

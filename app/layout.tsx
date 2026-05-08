@@ -12,6 +12,15 @@ const notoKufi = Noto_Kufi_Arabic({
 export const metadata: Metadata = {
   title: 'إسلامي',
   description: 'قران, احاديث , قصص , ادعية, اذكار',
+  icons: {
+    icon: '/icon',
+    apple: '/icon',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'إسلامي',
+  },
 };
 
 import { Providers } from '../components/providers/Providers';
