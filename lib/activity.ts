@@ -1,6 +1,6 @@
 'use client';
 
-export type ActivityType = 'azkar_morning' | 'azkar_evening' | 'azkar_after_salah' | 'azkar_tasabih' | 'azkar_sleep' | 'azkar_wakeup' | 'azkar_dua_quran' | 'azkar_dua_prophets' | 'quran_read' | 'quran_listen' | 'tafseer_listen' | 'hadith_read' | 'daily_visit' | 'challenge_win' | 'challenge_lose';
+export type ActivityType = 'azkar_morning' | 'azkar_evening' | 'azkar_after_salah' | 'azkar_tasabih' | 'azkar_sleep' | 'azkar_wakeup' | 'azkar_dua_quran' | 'azkar_dua_prophets' | 'quran_read' | 'quran_listen' | 'tafseer_listen' | 'hadith_read' | 'daily_visit' | 'challenge_entry' | 'challenge_win' | 'challenge_lose';
 
 const STAR_VALUES: Record<ActivityType, number> = {
   azkar_morning: 5,
@@ -16,7 +16,8 @@ const STAR_VALUES: Record<ActivityType, number> = {
   tafseer_listen: 2,
   hadith_read: 3,
   daily_visit: 1,
-  challenge_win: 10,
+  challenge_entry: -10,
+  challenge_win: 20,
   challenge_lose: -10,
 };
 
@@ -34,6 +35,7 @@ const DAILY_CAP: Record<ActivityType, number> = {
   tafseer_listen: 5,
   hadith_read: 5,
   daily_visit: 1,
+  challenge_entry: 100,
   challenge_win: 100,
   challenge_lose: 100,
 };
@@ -52,6 +54,7 @@ const ACTIVITY_NAMES: Record<ActivityType, string> = {
   tafseer_listen: 'استماع لتسجيل تفسير',
   hadith_read: 'قراءة حديث نبوي',
   daily_visit: 'زيارة يومية',
+  challenge_entry: 'رسوم دخول التحدي',
   challenge_win: 'فوز في التحدي',
   challenge_lose: 'خسارة في التحدي',
 };

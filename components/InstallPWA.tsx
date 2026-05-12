@@ -58,11 +58,11 @@ export function InstallPWA() {
   return (
     <button
       onClick={handleInstall}
-      className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full transition-colors text-sm font-bold shadow-lg shadow-cyan-600/20"
+      className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full transition-colors text-xs sm:text-sm font-bold shadow-lg shadow-cyan-600/20 whitespace-nowrap"
       title="تثبيت التطبيق"
     >
-      <Download className="w-4 h-4" />
-      <span className="hidden md:inline">تثبيت التطبيق</span>
+      <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+      <span>تثبيت التطبيق</span>
     </button>
   );
 }

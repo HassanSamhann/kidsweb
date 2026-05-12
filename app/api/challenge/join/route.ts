@@ -82,6 +82,12 @@ export async function POST(req: NextRequest) {
         .select('*')
         .single();
 
+      // Deduct 10★ entry fee from both players
+      await supabase.from('user_activities').insert([
+        { user_id: opponent.user_id, activity_type: 'challenge_entry', stars: -10, metadata: { session_id: session?.id } },
+        { user_id, activity_type: 'challenge_entry', stars: -10, metadata: { session_id: session?.id } },
+      ]);
+
       return NextResponse.json({ matched: true, session });
     }
 

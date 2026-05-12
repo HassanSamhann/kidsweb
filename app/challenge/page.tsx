@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Swords, Loader2, Trophy, Star, Timer, Users, CheckCircle2, XCircle, MinusCircle, Eye } from 'lucide-react';
+import { Swords, Loader2, Trophy, Star, Timer, Users, CheckCircle2, XCircle, MinusCircle, Eye, Volume2, VolumeX } from 'lucide-react';
+import { playStartSound, playQuestionEndSound, playClickSound, playCorrectSound, playWrongSound, playWinSound, playLoseSound } from '../../lib/sounds';
 
 interface Question {
   id: number;
@@ -42,6 +43,7 @@ export default function ChallengePage() {
   const [myScore, setMyScore] = React.useState<number | null>(null);
   const [opponentScore, setOpponentScore] = React.useState<number | null>(null);
   const [error, setError] = React.useState('');
+  const [soundEnabled, setSoundEnabled] = React.useState(true);
 
   const pollingRef = React.useRef<ReturnType<typeof setInterval>>(undefined);
   const questionTimerRef = React.useRef<ReturnType<typeof setInterval>>(undefined);
@@ -119,7 +121,7 @@ export default function ChallengePage() {
     pollingRef.current = setInterval(async () => {
       const u = userRef.current;
       if (!u) return;
-      const res = await fetch(`/api/challenge/status?user_id=${u.id}`);
+      const res = await fetch(`/api/challenge/status?user_id=${u.id}`, { cache: 'no-cache' });
       const data = await res.json();
       if (data.session) {
         clearInterval(pollingRef.current);
@@ -137,6 +139,7 @@ export default function ChallengePage() {
     setWaitingForOpponent(false);
     setOpponentUsername(isPlayer1 ? s.player2_username : s.player1_username);
     setStage('playing');
+    if (soundEnabled) playStartSound();
     startQuestionTimer();
   };
 
@@ -170,19 +173,39 @@ export default function ChallengePage() {
     if (!s || !u) return;
     if (questionTimerRef.current) clearInterval(questionTimerRef.current);
 
+    if (soundEnabled) playClickSound();
+
     const qIdx = currentQRef.current;
-    const res = await fetch('/api/challenge/answer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: s.id, user_id: u.id, q_index: qIdx, selected }),
-    });
+    let res: Response;
+    try {
+      res = await fetch('/api/challenge/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: s.id, user_id: u.id, q_index: qIdx, selected }),
+      });
+    } catch {
+      setWaitingForOpponent(true);
+      startWaitPolling();
+      return;
+    }
     const data = await res.json();
 
     setMyAnswers(prev => ({ ...prev, [qIdx]: selected }));
 
+    // Check correctness for sound
+    if (soundEnabled && selected >= 0 && s.questions[qIdx]) {
+      const isCorrect = selected === s.questions[qIdx].correctIndex;
+      if (isCorrect) playCorrectSound();
+      else playWrongSound();
+    }
+
     if (data.completed) {
-      // Fetch latest session data (answers, scores) for correct review
-      const freshRes = await fetch(`/api/challenge/session/${s.id}`);
+      if (soundEnabled) {
+        const isWinner = data.winner_id === u.id;
+        if (isWinner) playWinSound();
+        else playLoseSound();
+      }
+      const freshRes = await fetch(`/api/challenge/session/${s.id}`, { cache: 'no-cache' });
       const freshSession = await freshRes.json();
       setSession(freshSession);
       setMyScore(data.my_score);
@@ -191,7 +214,23 @@ export default function ChallengePage() {
       return;
     }
 
+    if (data.already_answered) {
+      // Re-check opponent's answer via fresh session
+      const freshRes = await fetch(`/api/challenge/session/${s.id}`, { cache: 'no-cache' });
+      const fresh: Session = await freshRes.json();
+      const isPlayer1 = fresh.player1_id === u.id;
+      const oppAnswers = isPlayer1 ? (fresh.player2_answers || {}) : (fresh.player1_answers || {});
+      if (oppAnswers[qIdx] !== undefined) {
+        advanceToNext();
+      } else {
+        setWaitingForOpponent(true);
+        startWaitPolling();
+      }
+      return;
+    }
+
     if (data.opponent_answered_this) {
+      if (soundEnabled) playQuestionEndSound();
       advanceToNext();
     } else {
       setWaitingForOpponent(true);
@@ -207,7 +246,7 @@ export default function ChallengePage() {
       const qIdx = currentQRef.current;
       if (!s || !u) return;
 
-      const res = await fetch(`/api/challenge/session/${s.id}`);
+      const res = await fetch(`/api/challenge/session/${s.id}`, { cache: 'no-cache' });
       const fresh: Session = await res.json();
 
       if (fresh.status === 'completed') {
@@ -260,10 +299,17 @@ export default function ChallengePage() {
         <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400">
           <Swords className="w-8 h-8" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-black text-[var(--text-primary)]">التحدي</h1>
           <p className="text-[var(--text-secondary)]">تنافس مع الآخرين في الأسئلة الإسلامية</p>
         </div>
+        <button
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className="p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
+          title={soundEnabled ? 'إيقاف الصوت' : 'تشغيل الصوت'}
+        >
+          {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+        </button>
       </div>
 
       {error && (
@@ -278,7 +324,7 @@ export default function ChallengePage() {
             <Users className="w-12 h-12" />
           </div>
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">تحدٍ جديد</h2>
-          <p className="text-[var(--text-muted)] mb-2">10 أسئلة إسلامية — الفائز يأخذ 10 نجوم</p>
+          <p className="text-[var(--text-muted)] mb-2">10 أسئلة إسلامية — كل لاعب يدفع 10 نجوم رسوم دخول، والفائز يأخذ 20 نجمة</p>
           <p className="text-xs text-amber-400/70 mb-8">يجب أن يكون لديك 10 نجوم على الأقل للمشاركة</p>
           <button
             onClick={joinQueue}
@@ -445,7 +491,7 @@ export default function ChallengePage() {
             </div>
             {myScore > opponentScore && (
               <div className="mt-4 bg-amber-500/10 text-amber-400 px-6 py-3 rounded-2xl inline-flex items-center gap-2 font-bold border border-amber-500/20">
-                <Star className="w-5 h-5 fill-amber-400" /> +10 نجوم!
+                <Star className="w-5 h-5 fill-amber-400" /> +20 نجمة!
               </div>
             )}
           </div>

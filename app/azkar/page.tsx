@@ -6,6 +6,7 @@ import { ChevronRight, HeartHandshake, CheckCircle2, Star, RotateCcw } from 'luc
 import { PageWrapper } from '../../components/ui/PageWrapper';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { logActivity, isAzkarDoneToday, markAzkarDoneToday, saveAzkarProgress, getAzkarProgress, type ActivityType } from '../../lib/activity';
+import { playAzkarCompleteSound, playClickSound } from '../../lib/sounds';
 
 interface Zikr {
   category: string;
@@ -44,6 +45,7 @@ export default function AzkarPage() {
   const hasLoggedRef = React.useRef(false);
 
   const handleCategorySelect = (category: string) => {
+    playClickSound();
     setSelectedCategory(category);
     setCounts({});
     setRemoving({});
@@ -89,6 +91,7 @@ export default function AzkarPage() {
       if (type) {
         if (isAzkarDoneToday(type)) return;
         markAzkarDoneToday(type);
+        playAzkarCompleteSound();
         logActivity(type, { category: selectedCategory }).then((res: any) => {
           const stars = res?.stars || 3;
           setRewardStars(stars);

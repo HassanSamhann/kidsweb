@@ -62,10 +62,9 @@ export async function POST(req: NextRequest) {
 
       if (winnerId) {
         const loserId = winnerId === updated.player1_id ? updated.player2_id : updated.player1_id;
-        await supabase.rpc('transfer_stars', { winner_id: winnerId, loser_id: loserId, amount: 10 });
+        // Winner takes the full pot (20★) — entry fee already deducted from both at match
         await supabase.from('user_activities').insert([
-          { user_id: winnerId, activity_type: 'challenge_win', stars: 10, metadata: { opponent_id: loserId } },
-          { user_id: loserId, activity_type: 'challenge_lose', stars: 0, metadata: { opponent_id: winnerId } },
+          { user_id: winnerId, activity_type: 'challenge_win', stars: 20, metadata: { opponent_id: loserId } },
         ]);
       }
     }

@@ -37,32 +37,15 @@ export async function DELETE(req: NextRequest) {
         })
         .eq('id', session.id);
 
-      // Award winner +10 stars via user_activities
+      // Award winner the full pot (20★) — entry fee already deducted from both at match
       await supabase.from('user_activities').insert([
         {
           user_id: winnerId,
           activity_type: 'challenge_win',
-          stars: 10,
+          stars: 20,
           metadata: { opponent_id: user_id, forfeit: true },
         },
       ]);
-
-      // Deduct from forfeiter (capped to current monthly balance)
-      const { data: forfeiterMonthly } = await supabase.rpc('get_user_monthly_stars', {
-        p_user_id: user_id,
-      });
-      const forfeiterStars = forfeiterMonthly || 0;
-      const deduction = Math.min(10, forfeiterStars);
-      if (deduction > 0) {
-        await supabase.from('user_activities').insert([
-          {
-            user_id,
-            activity_type: 'challenge_lose',
-            stars: -deduction,
-            metadata: { opponent_id: winnerId, forfeit: true },
-          },
-        ]);
-      }
 
       return NextResponse.json({ success: true, forfeited: true });
     }

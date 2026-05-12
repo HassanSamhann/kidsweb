@@ -82,13 +82,9 @@ export async function POST(req: NextRequest) {
 
       if (winnerId) {
         const loserId = winnerId === updated.player1_id ? updated.player2_id : updated.player1_id;
-        // Deduct from loser's monthly stars (min 0)
-        const { data: loserMonthly } = await supabase.rpc('get_user_monthly_stars', { p_user_id: loserId });
-        const loserStars = loserMonthly || 0;
-        const deduction = Math.min(10, loserStars);
+        // Winner takes the full pot (20★) — entry fee already deducted from both
         await supabase.from('user_activities').insert([
-          { user_id: winnerId, activity_type: 'challenge_win', stars: 10, metadata: { opponent_id: loserId } },
-          { user_id: loserId, activity_type: 'challenge_lose', stars: -deduction, metadata: { opponent_id: winnerId } },
+          { user_id: winnerId, activity_type: 'challenge_win', stars: 20, metadata: { opponent_id: loserId } },
         ]);
       }
 
