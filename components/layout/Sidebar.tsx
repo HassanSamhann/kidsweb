@@ -9,6 +9,8 @@ import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as Rad
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => { setMounted(true); }, []);
 
   const navItems = [
     { href: '/', icon: Home, label: 'الرئيسية' },
@@ -75,7 +77,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
           <Settings className="w-5 h-5 text-gray-400" />
           <span>الإعدادات</span>
         </Link>
-        {user?.role === 'admin' && (
+        {mounted && user?.role === 'admin' && (
           <Link href="/admin" onClick={onClose} className="flex items-center gap-4 px-4 py-3 w-full rounded-xl hover:bg-[#252b36] hover:text-white transition-colors text-right">
             <Shield className="w-5 h-5 text-red-400" />
             <span className="text-red-400">الإدارة</span>

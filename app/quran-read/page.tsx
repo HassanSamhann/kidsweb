@@ -3,6 +3,7 @@
 import React from 'react';
 import { BookOpen, ChevronLeft, Search, Star } from 'lucide-react';
 import { logActivity } from '../../lib/activity';
+import { cleanAyahText } from '../../lib/quran-clean';
 
 interface Surah {
   number: string;
@@ -13,7 +14,7 @@ interface Ayah {
   id: number;
   sura_no: number;
   aya_no: number;
-  aya_text: string;
+  aya_text_emlaey: string;
   page: number;
 }
 
@@ -121,7 +122,7 @@ export default function QuranReadPage() {
                 {currentSurahAyat.map((ayah) => (
                   <div key={ayah.id} className="mb-6 last:mb-0">
                     <p className="text-2xl md:text-3xl leading-[2.5] text-[var(--text-primary)] font-arabic text-right">
-                      {ayah.aya_text}
+                      {cleanAyahText(ayah.aya_text_emlaey)}
                       <span className="text-sm md:text-base text-[var(--text-muted)] mr-2 align-middle" style={{ fontFamily: 'serif' }}>﴿{ayah.aya_no}﴾</span>
                     </p>
                   </div>

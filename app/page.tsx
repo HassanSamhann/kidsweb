@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BookOpen, BookText, HeartHandshake, Smile, Clock, Star, BookMarked, Swords } from 'lucide-react';
 import { PageWrapper } from '../components/ui/PageWrapper';
 import { useAuth } from '../hooks/useAuth';
+import { cleanAyahText, cleanTafseerText } from '../lib/quran-clean';
 
 const TEXT_TAFSEER_BASE = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/Quran-Data/Tafseer/tfseer_mokhtser';
 const SURAH_API = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/surah.json';
@@ -173,7 +174,7 @@ export default function Home() {
             <div className="relative z-10">
               <p className="text-xs text-emerald-400/70 uppercase tracking-widest mb-2 font-bold">آية اليوم</p>
               <p className="text-2xl md:text-3xl leading-[2.2] text-white mb-4 font-arabic">
-                {ayahOfDay.text}
+                {cleanAyahText(ayahOfDay.text)}
               </p>
               <p className="text-emerald-400/80 text-sm mb-4">
                 {ayahOfDay.sura} - الآية {ayahOfDay.aya}
@@ -182,7 +183,7 @@ export default function Home() {
                 <div className="border-t border-emerald-500/20 pt-4 mt-2">
                   <p className="text-xs text-emerald-400/60 mb-2">التفسير المختصر:</p>
                   <p className="text-sm text-emerald-200/80 leading-relaxed text-right">
-                    {tafseerText.split('<br>').map((part, i, arr) => (
+                    {cleanTafseerText(tafseerText).split('<br />').map((part, i, arr) => (
                       <React.Fragment key={i}>
                         {part}
                         {i < arr.length - 1 && <br />}

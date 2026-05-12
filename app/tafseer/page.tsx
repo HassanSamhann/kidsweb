@@ -4,6 +4,7 @@ import React from 'react';
 import { useAudioPlayer } from '../../contexts/AudioPlayerContext';
 import { BookText, Play, ChevronLeft, Headphones, BookOpen, Sparkles } from 'lucide-react';
 import { logActivity } from '../../lib/activity';
+import { cleanAyahText, cleanTafseerText } from '../../lib/quran-clean';
 
 const AUDIO_TAFSIR_API = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/Audio-tafsir.json';
 const SURAH_API = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/surah.json';
@@ -144,7 +145,7 @@ export default function TafseerPage() {
   };
 
   const formatTafseerText = (text: string) => {
-    return text.split('<br>').map((part, i, arr) => (
+    return cleanTafseerText(text).split('<br />').map((part, i, arr) => (
       <React.Fragment key={i}>
         {part}
         {i < arr.length - 1 && <br />}
@@ -283,7 +284,7 @@ export default function TafseerPage() {
               </div>
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6">
                 <p className="text-2xl text-center leading-loose font-arabic text-[var(--text-primary)] mb-4">
-                  {dailyAyah.ayah.text_uthmani}
+                  {cleanAyahText(dailyAyah.ayah.text_uthmani)}
                 </p>
                 <div className="text-center mb-4">
                   <span className="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold">
@@ -388,7 +389,7 @@ export default function TafseerPage() {
                         </span>
                       </div>
                       <p className="text-xl text-right leading-loose font-arabic text-[var(--text-primary)] mb-4">
-                        {verse.text_uthmani}
+                        {cleanAyahText(verse.text_uthmani)}
                       </p>
                       <div className="border-t border-[var(--border-color)] pt-4">
                         <p className="text-xs text-[var(--text-muted)] mb-2">التفسير:</p>

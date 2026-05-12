@@ -130,7 +130,7 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
                   <Settings className="w-4 h-4" />
                   <span>الإعدادات</span>
                 </Link>
-                {user?.role === 'admin' && (
+                {mounted && user?.role === 'admin' && (
                   <Link
                     href="/admin"
                     onClick={() => setDropdownOpen(false)}
