@@ -21,20 +21,40 @@ export const metadata: Metadata = {
     'القرآن الكريم',
     'قرآن',
     'تفسير',
+    'تفسير القرآن',
     'حديث نبوي',
+    'الحديث الشريف',
+    'الأربعون النووية',
     'أذكار',
     'حصن المسلم',
+    'أذكار الصباح والمساء',
+    'أدعية',
     'مواقيت الصلاة',
+    'أوقات الصلاة',
     'أسماء الله الحسنى',
+    '99 names of allah',
     'القبلة',
     'اتجاه القبلة',
     'تحديات دينية',
+    'أسئلة دينية',
     'إسلام',
     'دين',
     'تعليم إسلامي',
     'قراءة القرآن',
+    'القرآن مكتوب',
+    'الرسم العثماني',
     'آية اليوم',
     'حديث اليوم',
+    'قصص إسلامية',
+    'قصص الأنبياء',
+    'أطفال',
+    'تلوين إسلامي',
+    'ألعاب إسلامية',
+    'إذاعة القرآن',
+    'quran',
+    'islam',
+    'islamic app',
+    'prayer times',
   ],
   authors: [{ name: 'Hassan Samhan', url: 'https://hassansamhan.vercel.app/' }],
   creator: 'Hassan Samhan',
@@ -50,19 +70,19 @@ export const metadata: Metadata = {
       'القرآن الكريم، التفسير، الحديث، الأذكار، مواقيت الصلاة، أسماء الله الحسنى، وتحديات تفاعلية',
     images: [
       {
-        url: '/icon',
-        width: 192,
-        height: 192,
-        alt: 'إسلامي',
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'إسلامي - المنصة الإسلامية الشاملة',
       },
     ],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'إسلامي',
     description:
       'القرآن الكريم، التفسير، الحديث، الأذكار، مواقيت الصلاة، وأسماء الله الحسنى',
-    images: ['/icon'],
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
@@ -91,6 +111,7 @@ export const metadata: Metadata = {
 };
 
 import { Providers } from '../components/providers/Providers';
+import { JsonLd } from '../components/JsonLd';
 
 export default function RootLayout({
   children,
@@ -99,6 +120,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl">
+      <head>
+        <JsonLd />
+      </head>
       <body className={cn(notoKufi.className, "antialiased")}>
         <Providers>
           {children}

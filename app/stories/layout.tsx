@@ -1,33 +1,15 @@
-'use client';
+import type { Metadata } from 'next';
 
-import React, { useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+export const metadata: Metadata = {
+  title: 'قصص إسلامية للأطفال',
+  description:
+    'قصص إسلامية ممتعة للأطفال - قصص الأنبياء، قصص الصحابة، وقصص من القرآن. محتوى هادف وتعليمي ممتع للصغار.',
+  openGraph: {
+    title: 'قصص إسلامية للأطفال | إسلامي',
+    description: 'قصص إسلامية ممتعة وهادفة للأطفال - قصص الأنبياء والصحابة وقصص من القرآن.',
+  },
+};
 
-export default function StoriesLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [mounted, setMounted] = React.useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    // If we are mounted and no user, redirect to login
-    // We use a small delay or check to avoid flashing if user is being loaded from localStorage
-  }, []);
-
-  if (!mounted) return null;
-
-  if (!user) {
-    // Redirect to login but save the attempted URL to return later if desired
-    router.push('/login');
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-        <LoadingSpinner size={48} />
-        <p className="text-gray-400 font-bold">يرجى تسجيل الدخول للوصول إلى ركن الأطفال...</p>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return children;
 }

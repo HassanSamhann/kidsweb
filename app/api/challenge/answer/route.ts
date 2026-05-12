@@ -69,6 +69,8 @@ export async function POST(req: NextRequest) {
       if (myScore > oppScore) winnerId = user_id;
       else if (oppScore > myScore) winnerId = isPlayer1 ? updated.player2_id : updated.player1_id;
 
+      // Try to complete the session — filter by 'active' to ensure only
+      // one request (the first) actually does the completion + award
       await supabase
         .from('challenge_sessions')
         .update({
@@ -78,23 +80,45 @@ export async function POST(req: NextRequest) {
           player1_score: isPlayer1 ? myScore : oppScore,
           player2_score: isPlayer1 ? oppScore : myScore,
         })
-        .eq('id', session_id);
+        .eq('id', session_id)
+        .eq('status', 'active');
 
-      if (winnerId) {
-        const loserId = winnerId === updated.player1_id ? updated.player2_id : updated.player1_id;
-        // Winner takes the full pot (20★) — entry fee already deducted from both
-        await supabase.from('user_activities').insert([
-          { user_id: winnerId, activity_type: 'challenge_win', stars: 20, metadata: { opponent_id: loserId } },
-        ]);
+      // Read back to see who really won (scores from whoever completed it)
+      const { data: finalized } = await supabase
+        .from('challenge_sessions')
+        .select('winner_id, player1_score, player2_score')
+        .eq('id', session_id)
+        .single();
+
+      const realWinner = finalized?.winner_id;
+      const finalMyScore = isPlayer1 ? finalized?.player1_score : finalized?.player2_score;
+      const finalOppScore = isPlayer1 ? finalized?.player2_score : finalized?.player1_score;
+
+      // Only award if no challenge_win exists for this session yet
+      if (realWinner) {
+        const { data: existing } = await supabase
+          .from('user_activities')
+          .select('id')
+          .eq('user_id', realWinner)
+          .eq('activity_type', 'challenge_win')
+          .eq('metadata->>session_id', session_id)
+          .maybeSingle();
+
+        if (!existing) {
+          const loserId = realWinner === updated.player1_id ? updated.player2_id : updated.player1_id;
+          await supabase.from('user_activities').insert([
+            { user_id: realWinner, activity_type: 'challenge_win', stars: 20, metadata: { opponent_id: loserId, session_id } },
+          ]);
+        }
       }
 
       return NextResponse.json({
         ok: true,
         opponent_answered_this: opponentAnsweredThis,
         completed: true,
-        winner_id: winnerId,
-        my_score: myScore,
-        opponent_score: oppScore,
+        winner_id: realWinner,
+        my_score: finalMyScore ?? 0,
+        opponent_score: finalOppScore ?? 0,
       });
     }
 

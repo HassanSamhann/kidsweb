@@ -58,14 +58,25 @@ export async function POST(req: NextRequest) {
       await supabase
         .from('challenge_sessions')
         .update({ status: 'completed', winner_id: winnerId, completed_at: new Date().toISOString() })
-        .eq('id', session_id);
+        .eq('id', session_id)
+        .eq('status', 'active');
 
+      // Award only if not already awarded (race condition guard)
       if (winnerId) {
-        const loserId = winnerId === updated.player1_id ? updated.player2_id : updated.player1_id;
-        // Winner takes the full pot (20★) — entry fee already deducted from both at match
-        await supabase.from('user_activities').insert([
-          { user_id: winnerId, activity_type: 'challenge_win', stars: 20, metadata: { opponent_id: loserId } },
-        ]);
+        const { data: existing } = await supabase
+          .from('user_activities')
+          .select('id')
+          .eq('user_id', winnerId)
+          .eq('activity_type', 'challenge_win')
+          .eq('metadata->>session_id', session_id)
+          .maybeSingle();
+
+        if (!existing) {
+          const loserId = winnerId === updated.player1_id ? updated.player2_id : updated.player1_id;
+          await supabase.from('user_activities').insert([
+            { user_id: winnerId, activity_type: 'challenge_win', stars: 20, metadata: { opponent_id: loserId, session_id } },
+          ]);
+        }
       }
     }
 
