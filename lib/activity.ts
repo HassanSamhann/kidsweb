@@ -85,17 +85,17 @@ export function markAzkarDoneToday(category: string) {
 const QURAN_PROGRESS_KEY = 'quran_progress';
 const AZKAR_PROGRESS_PREFIX = 'azkar_progress_';
 
-export function saveQuranProgress(surah: number, ayah?: number) {
+export function saveQuranProgress(surah: number, ayah?: number, page?: number) {
   const prev = getQuranProgress();
-  localStorage.setItem(QURAN_PROGRESS_KEY, JSON.stringify({ surah, ayah: ayah ?? prev?.ayah, date: today() }));
+  localStorage.setItem(QURAN_PROGRESS_KEY, JSON.stringify({ surah, ayah: ayah ?? prev?.ayah, page: page ?? prev?.page, date: today() }));
 }
 
-export function getQuranProgress(): { surah: number; ayah?: number } | null {
+export function getQuranProgress(): { surah: number; ayah?: number; page?: number } | null {
   try {
     const raw = localStorage.getItem(QURAN_PROGRESS_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    return data.surah ? { surah: data.surah, ayah: data.ayah } : null;
+    return data.surah ? { surah: data.surah, ayah: data.ayah, page: data.page } : null;
   } catch { return null; }
 }
 
