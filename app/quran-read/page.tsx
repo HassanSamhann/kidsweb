@@ -14,7 +14,7 @@ interface Ayah {
   id: number;
   sura_no: number;
   aya_no: number;
-  aya_text: string;
+  aya_text_emlaey: string;
   page: number;
 }
 
@@ -183,7 +183,7 @@ export default function QuranReadPage() {
                     className="mb-6 last:mb-0 group relative"
                   >
                     <p className="text-2xl md:text-3xl leading-[2.5] text-[var(--text-primary)] font-arabic text-right">
-                      {cleanAyahText(ayah.aya_text)}
+                      {cleanAyahText(ayah.aya_text_emlaey)}
                       <span className="text-sm md:text-base text-[var(--text-muted)] mr-2 align-middle" style={{ fontFamily: 'serif' }}>﴿{ayah.aya_no}﴾</span>
                     </p>
                     <button
