@@ -54,11 +54,46 @@ export default function ChallengePage() {
   const userRef = React.useRef(user);
   userRef.current = user;
 
+  const forfeit = async () => {
+    if (!user) return;
+    if (!confirm('هل أنت متأكد من الانسحاب؟ سيتم خصم 10 نجوم من رصيدك!')) return;
+    await fetch('/api/challenge/leave', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id }),
+    });
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    if (questionTimerRef.current) clearInterval(questionTimerRef.current);
+    if (waitPollRef.current) clearInterval(waitPollRef.current);
+    setStage('idle');
+    setSession(null);
+  };
+
+  // Forfeit on tab close / navigate away while in active session
   React.useEffect(() => {
+    const handleBeforeUnload = () => {
+      const u = userRef.current;
+      const s = sessionRef.current;
+      if (u && s) {
+        navigator.sendBeacon('/api/challenge/leave', JSON.stringify({ user_id: u.id }));
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       if (pollingRef.current) clearInterval(pollingRef.current);
       if (questionTimerRef.current) clearInterval(questionTimerRef.current);
       if (waitPollRef.current) clearInterval(waitPollRef.current);
+      // Forfeit on component unmount if in active session
+      const u = userRef.current;
+      const s = sessionRef.current;
+      if (u && s) {
+        fetch('/api/challenge/leave', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: u.id }),
+        });
+      }
     };
   }, []);
 
@@ -286,6 +321,12 @@ export default function ChallengePage() {
               <span className="font-bold text-[var(--text-primary)]">مواجهة: {opponentUsername}</span>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={forfeit}
+                className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 bg-red-500/10 rounded-lg border border-red-500/20 transition-colors"
+              >
+                انسحاب
+              </button>
               <span className="text-sm text-[var(--text-muted)]">{currentQ + 1}/{session.questions.length}</span>
               <div className="flex items-center gap-1 text-amber-400" dir="ltr">
                 <Timer className="w-4 h-4" />
@@ -373,6 +414,12 @@ export default function ChallengePage() {
             <Eye className="w-4 h-4" />
             <span>سيتم نقلك للسؤال التالي تلقائياً</span>
           </div>
+          <button
+            onClick={forfeit}
+            className="mt-6 px-6 py-3 bg-red-500/10 text-red-400 rounded-xl font-bold hover:bg-red-500/20 transition-colors border border-red-500/20"
+          >
+            انسحاب من التحدي
+          </button>
         </div>
       )}
 

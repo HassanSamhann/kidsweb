@@ -15,9 +15,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const navItems = [
     { href: '/', icon: Home, label: 'الرئيسية' },
     { href: '/challenge', icon: Swords, label: 'التحدي', isNew: true },
-    { href: '/quran', icon: BookOpen, label: 'القرآن الكريم' },
-    { href: '/quran-read', icon: BookMarked, label: 'قراءة القرآن' },
-    { href: '/tafseer', icon: Headphones, label: 'التفسير' },
+    { href: '/quran', icon: Headphones, label: 'القرآن الكريم' },
+    { href: '/quran-read', icon: BookOpen, label: 'قراءة القرآن' },
+    { href: '/tafseer', icon: BookMarked, label: 'التفسير' },
     { href: '/radio', icon: RadioIcon, label: 'إذاعة القرآن' },
     { href: '/hadith', icon: BookText, label: 'الحديث النبوي' },
     { href: '/azkar', icon: HeartHandshake, label: 'حصن المسلم' },
@@ -51,7 +51,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+          const isActive = pathname === item.href || (item.href !== '/' && (pathname + '/').startsWith(item.href + '/'));
           const Icon = item.icon;
           
           return (

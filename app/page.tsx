@@ -9,7 +9,7 @@ import { cleanAyahText, cleanTafseerText } from '../lib/quran-clean';
 
 const TEXT_TAFSEER_BASE = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/Quran-Data/Tafseer/tfseer_mokhtser';
 const SURAH_API = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/surah.json';
-const HADITH_API = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-nawawi.json';
+const HADITH_API = 'https://raw.githubusercontent.com/fawazahmed0/hadith-api/master/editions/ara-nawawi.min.json';
 
 export default function Home() {
   const { user } = useAuth();
@@ -24,46 +24,55 @@ export default function Home() {
     fetchedRef.current = true;
 
     const today = new Date().toDateString();
-    const seed = today.split(' ').join('').length * new Date().getDate();
-    const suraNo = (seed % 114) + 1;
-    const ayaNo = (seed % 286) + 1;
 
+    // --- Ayah of the day ---
     const cached = localStorage.getItem('home_ayah');
     if (cached) try {
       const p = JSON.parse(cached);
       if (p.date === today) {
         setAyahOfDay(p.data.ayah);
         setTafseerText(p.data.tafseer);
-        return;
       }
     } catch {}
 
-    Promise.all([
-      fetch(SURAH_API).then(r => r.json()),
-      fetch(`${TEXT_TAFSEER_BASE}/${suraNo}.json`).then(r => r.json()).catch(() => null)
-    ]).then(([surahs, tafseerData]: [any[], any]) => {
-      if (!tafseerData || !Array.isArray(tafseerData)) return;
-      const match = tafseerData.find((t: any) => t.t_verse_number === ayaNo);
-      if (!match) return;
-      const suraName = surahs.find((s: any) => Number(s.number) === suraNo)?.name || match.t_name_arabic || '';
-      const ayahData = { text: match.text_uthmani, sura: suraName, aya: ayaNo };
-      const tafseer = match.tafseer || null;
-      setAyahOfDay(ayahData);
-      setTafseerText(tafseer);
-      localStorage.setItem('home_ayah', JSON.stringify({ date: today, data: { ayah: ayahData, tafseer } }));
+    // Always try to refresh in background, avoid stale cache
+    fetch(SURAH_API).then(r => r.json()).then(surahs => {
+      const tryAyah = (attempt = 0): Promise<void> => {
+        if (attempt > 20) return Promise.resolve(); // give up after 20 tries
+        const suraNo = ((new Date().getDate() + attempt * 7) % 114) + 1;
+        const ayaNo = ((new Date().getDate() + attempt * 13) % 286) + 1;
+        return fetch(`${TEXT_TAFSEER_BASE}/${suraNo}.json`)
+          .then(r => r.json())
+          .then((tafseerData: any[]) => {
+            if (!Array.isArray(tafseerData)) return tryAyah(attempt + 1);
+            const match = tafseerData.find((t: any) => t.t_verse_number === ayaNo);
+            if (!match) return tryAyah(attempt + 1);
+            const suraName = surahs.find((s: any) => Number(s.number) === suraNo)?.name || match.t_name_arabic || '';
+            const ayahData = { text: match.text_uthmani, sura: suraName, aya: ayaNo };
+            const tafseer = match.tafseer || null;
+            setAyahOfDay(ayahData);
+            setTafseerText(tafseer);
+            localStorage.setItem('home_ayah', JSON.stringify({ date: today, data: { ayah: ayahData, tafseer } }));
+          })
+          .catch(() => tryAyah(attempt + 1));
+      };
+      tryAyah();
     }).catch(() => {});
 
+    // --- Hadith of the day ---
     const hadCached = localStorage.getItem('home_hadith');
     if (hadCached) try {
       const p = JSON.parse(hadCached);
-      if (p.date === today) { setHadithOfDay(p.data); return; }
+      if (p.date === today) { setHadithOfDay(p.data); }
     } catch {}
 
-    fetch(HADITH_API).then(r => r.json()).then((data: { hadiths: { hadithnumber: number; text: string }[] }) => {
-      const idx = new Date().getDate() % data.hadiths.length;
-      const h = data.hadiths[idx];
-      if (h) {
-        const hData = { text: h.text, number: h.hadithnumber };
+    fetch(HADITH_API).then(r => r.json()).then((data: any) => {
+      const hadiths = data?.hadiths || [];
+      if (hadiths.length === 0) return;
+      const idx = (new Date().getDate() + new Date().getMonth()) % hadiths.length;
+      const h = hadiths[idx];
+      if (h?.text) {
+        const hData = { text: h.text, number: h.hadithnumber || idx };
         setHadithOfDay(hData);
         localStorage.setItem('home_hadith', JSON.stringify({ date: today, data: hData }));
       }

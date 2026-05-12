@@ -11,9 +11,63 @@ export async function DELETE(req: NextRequest) {
     }
 
     const supabase = getSupabaseAdmin();
+
+    // First, remove from queue if waiting
     await supabase.from('challenge_queue').delete().eq('user_id', user_id);
 
-    return NextResponse.json({ success: true });
+    // Check if user has an active session → forfeit
+    const { data: session } = await supabase
+      .from('challenge_sessions')
+      .select('*')
+      .or(`player1_id.eq.${user_id},player2_id.eq.${user_id}`)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (session) {
+      const isPlayer1 = session.player1_id === user_id;
+      const winnerId = isPlayer1 ? session.player2_id : session.player1_id;
+
+      // Mark session as completed with winner = the other player
+      await supabase
+        .from('challenge_sessions')
+        .update({
+          status: 'completed',
+          winner_id: winnerId,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', session.id);
+
+      // Award winner +10 stars via user_activities
+      await supabase.from('user_activities').insert([
+        {
+          user_id: winnerId,
+          activity_type: 'challenge_win',
+          stars: 10,
+          metadata: { opponent_id: user_id, forfeit: true },
+        },
+      ]);
+
+      // Deduct from forfeiter (capped to current monthly balance)
+      const { data: forfeiterMonthly } = await supabase.rpc('get_user_monthly_stars', {
+        p_user_id: user_id,
+      });
+      const forfeiterStars = forfeiterMonthly || 0;
+      const deduction = Math.min(10, forfeiterStars);
+      if (deduction > 0) {
+        await supabase.from('user_activities').insert([
+          {
+            user_id,
+            activity_type: 'challenge_lose',
+            stars: -deduction,
+            metadata: { opponent_id: winnerId, forfeit: true },
+          },
+        ]);
+      }
+
+      return NextResponse.json({ success: true, forfeited: true });
+    }
+
+    return NextResponse.json({ success: true, forfeited: false });
   } catch (err) {
     console.error('Challenge leave error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
