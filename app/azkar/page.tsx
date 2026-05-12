@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronRight, HeartHandshake, CheckCircle2, Star, RotateCcw } from 'lucide-react';
 import { PageWrapper } from '../../components/ui/PageWrapper';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { logActivity, isAzkarDoneToday, markAzkarDoneToday, saveAzkarProgress, getAzkarProgress } from '../../lib/activity';
+import { logActivity, isAzkarDoneToday, markAzkarDoneToday, saveAzkarProgress, getAzkarProgress, type ActivityType } from '../../lib/activity';
 
 interface Zikr {
   category: string;
@@ -69,21 +69,28 @@ export default function AzkarPage() {
     }
   }, [removed, selectedCategory]);
 
+  const categoryToType = (cat: string): ActivityType | null => {
+    if (cat.includes('الصباح')) return 'azkar_morning';
+    if (cat.includes('المساء')) return 'azkar_evening';
+    if (cat.includes('بعد السلام')) return 'azkar_after_salah';
+    if (cat.includes('تسابيح')) return 'azkar_tasabih';
+    if (cat.includes('النوم')) return 'azkar_sleep';
+    if (cat.includes('الاستيقاظ')) return 'azkar_wakeup';
+    if (cat.includes('أدعية قرآنية')) return 'azkar_dua_quran';
+    if (cat.includes('أدعية الأنبياء')) return 'azkar_dua_prophets';
+    return null;
+  };
+
   useEffect(() => {
     if (allRemoved && !hasLoggedRef.current) {
       hasLoggedRef.current = true;
-      const isMorning = selectedCategory?.includes('الصباح');
-      const isEvening = selectedCategory?.includes('المساء');
-      const type = isMorning ? 'azkar_morning' : isEvening ? 'azkar_evening' : null;
+      const type = selectedCategory ? categoryToType(selectedCategory) : null;
 
       if (type) {
-        // Check if already done today
-        if (isAzkarDoneToday(type)) {
-          return;
-        }
+        if (isAzkarDoneToday(type)) return;
         markAzkarDoneToday(type);
         logActivity(type, { category: selectedCategory }).then((res: any) => {
-          const stars = res?.stars || 5;
+          const stars = res?.stars || 3;
           setRewardStars(stars);
           setShowReward(true);
           setTimeout(() => setShowReward(false), 3000);
@@ -118,7 +125,7 @@ export default function AzkarPage() {
   }, []);
 
   const doneToday = selectedCategory
-    ? isAzkarDoneToday(selectedCategory.includes('الصباح') ? 'azkar_morning' : 'azkar_evening')
+    ? isAzkarDoneToday(categoryToType(selectedCategory) || 'azkar_morning')
     : false;
 
   return (
@@ -165,9 +172,8 @@ export default function AzkarPage() {
         ) : !selectedCategory ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.keys(azkarData).map((category) => {
-              const isMorning = category.includes('الصباح');
-              const isEvening = category.includes('المساء');
-              const doneTodayFlag = isMorning ? isAzkarDoneToday('azkar_morning') : isEvening ? isAzkarDoneToday('azkar_evening') : false;
+              const type = categoryToType(category);
+              const doneTodayFlag = type ? isAzkarDoneToday(type) : false;
               return (
                 <div 
                   key={category} 

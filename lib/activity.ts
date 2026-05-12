@@ -1,10 +1,16 @@
 'use client';
 
-export type ActivityType = 'azkar_morning' | 'azkar_evening' | 'quran_read' | 'quran_listen' | 'tafseer_listen' | 'hadith_read' | 'daily_visit' | 'challenge_win' | 'challenge_lose';
+export type ActivityType = 'azkar_morning' | 'azkar_evening' | 'azkar_after_salah' | 'azkar_tasabih' | 'azkar_sleep' | 'azkar_wakeup' | 'azkar_dua_quran' | 'azkar_dua_prophets' | 'quran_read' | 'quran_listen' | 'tafseer_listen' | 'hadith_read' | 'daily_visit' | 'challenge_win' | 'challenge_lose';
 
 const STAR_VALUES: Record<ActivityType, number> = {
   azkar_morning: 5,
   azkar_evening: 5,
+  azkar_after_salah: 2,
+  azkar_tasabih: 2,
+  azkar_sleep: 3,
+  azkar_wakeup: 1,
+  azkar_dua_quran: 2,
+  azkar_dua_prophets: 2,
   quran_read: 3,
   quran_listen: 2,
   tafseer_listen: 2,
@@ -17,6 +23,12 @@ const STAR_VALUES: Record<ActivityType, number> = {
 const DAILY_CAP: Record<ActivityType, number> = {
   azkar_morning: 5,
   azkar_evening: 5,
+  azkar_after_salah: 5,
+  azkar_tasabih: 5,
+  azkar_sleep: 5,
+  azkar_wakeup: 5,
+  azkar_dua_quran: 5,
+  azkar_dua_prophets: 5,
   quran_read: 5,
   quran_listen: 5,
   tafseer_listen: 5,
@@ -29,6 +41,12 @@ const DAILY_CAP: Record<ActivityType, number> = {
 const ACTIVITY_NAMES: Record<ActivityType, string> = {
   azkar_morning: 'إكمال أذكار الصباح',
   azkar_evening: 'إكمال أذكار المساء',
+  azkar_after_salah: 'إكمال أذكار بعد الصلاة',
+  azkar_tasabih: 'إكمال التسابيح',
+  azkar_sleep: 'إكمال أذكار النوم',
+  azkar_wakeup: 'إكمال أذكار الاستيقاظ',
+  azkar_dua_quran: 'إكمال الأدعية القرآنية',
+  azkar_dua_prophets: 'إكمال أدعية الأنبياء',
   quran_read: 'قراءة سورة من القرآن',
   quran_listen: 'استماع لتلاوة قرآنية',
   tafseer_listen: 'استماع لتسجيل تفسير',
