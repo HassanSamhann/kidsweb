@@ -112,6 +112,7 @@ export const metadata: Metadata = {
 
 import { Providers } from '../components/providers/Providers';
 import { JsonLd } from '../components/JsonLd';
+import { Analytics } from '@vercel/analytics/next';
 
 export default function RootLayout({
   children,
@@ -126,6 +127,7 @@ export default function RootLayout({
       <body className={cn(notoKufi.className, "antialiased")}>
         <Providers>
           {children}
+          <Analytics />
         </Providers>
       </body>
     </html>

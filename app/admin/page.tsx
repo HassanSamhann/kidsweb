@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Shield, User, Star, Trash2, Save, X, Search, RefreshCw, AlertCircle } from 'lucide-react';
+import { Shield, User, Star, Trash2, Save, X, Search, RefreshCw, AlertCircle, Activity, CalendarDays, Clock } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { getActivityName } from '../../lib/activity';
 
 interface AdminUser {
   id: string;
@@ -12,6 +13,14 @@ interface AdminUser {
   monthly_stars: number;
   role: string | null;
   created_at: string;
+}
+
+interface ActivityEntry {
+  id: string;
+  activity_type: string;
+  stars: number;
+  created_at: string;
+  metadata: any;
 }
 
 export default function AdminPage() {
@@ -25,6 +34,12 @@ export default function AdminPage() {
   const [editUsername, setEditUsername] = React.useState<Record<string, string>>({});
   const [saving, setSaving] = React.useState<Record<string, boolean>>({});
   const [msg, setMsg] = React.useState('');
+
+  // Activity modal state
+  const [activityUser, setActivityUser] = React.useState<{ id: string; username: string } | null>(null);
+  const [activities, setActivities] = React.useState<ActivityEntry[]>([]);
+  const [activityLoading, setActivityLoading] = React.useState(false);
+  const [activityDate, setActivityDate] = React.useState('');
 
   React.useEffect(() => {
     if (user && user.role !== 'admin') {
@@ -74,6 +89,34 @@ export default function AdminPage() {
       fetchUsers();
     }
     setSaving(prev => ({ ...prev, [targetId]: false }));
+  };
+
+  const openActivityModal = async (targetId: string, username: string) => {
+    setActivityUser({ id: targetId, username });
+    setActivityDate('');
+    setActivities([]);
+    setActivityLoading(true);
+    try {
+      let url = `/api/admin/user-activities?admin_id=${user?.id}&user_id=${targetId}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setActivities(data.activities || []);
+    } catch {}
+    setActivityLoading(false);
+  };
+
+  const fetchActivitiesForDate = async (date: string) => {
+    if (!activityUser) return;
+    setActivityDate(date);
+    setActivityLoading(true);
+    try {
+      let url = `/api/admin/user-activities?admin_id=${user?.id}&user_id=${activityUser.id}`;
+      if (date) url += `&date=${date}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setActivities(data.activities || []);
+    } catch {}
+    setActivityLoading(false);
   };
 
   const handleDelete = async (targetId: string, username: string) => {
@@ -161,6 +204,7 @@ export default function AdminPage() {
                 <th className="text-right p-3 font-bold text-[var(--text-muted)]">النجوم</th>
                 <th className="text-right p-3 font-bold text-[var(--text-muted)]">الصلاحية</th>
                 <th className="text-right p-3 font-bold text-[var(--text-muted)]">تاريخ التسجيل</th>
+                <th className="text-center p-3 font-bold text-[var(--text-muted)]">النشاط</th>
                 <th className="text-center p-3 font-bold text-[var(--text-muted)]">إجراءات</th>
               </tr>
             </thead>
@@ -220,6 +264,15 @@ export default function AdminPage() {
                   </td>
                   <td className="p-3 text-center">
                     <button
+                      onClick={() => openActivityModal(u.id, u.username)}
+                      className="p-2 text-cyan-400 hover:text-cyan-300 transition-colors"
+                      title="عرض النشاط"
+                    >
+                      <Activity className="w-4 h-4" />
+                    </button>
+                  </td>
+                  <td className="p-3 text-center">
+                    <button
                       onClick={() => handleDelete(u.id, u.username)}
                       disabled={saving[u.id] || u.role === 'admin'}
                       className="p-2 text-red-400 hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
@@ -232,7 +285,7 @@ export default function AdminPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-[var(--text-muted)]">
+                  <td colSpan={6} className="text-center py-12 text-[var(--text-muted)]">
                     لا يوجد مستخدمين
                   </td>
                 </tr>
@@ -245,6 +298,98 @@ export default function AdminPage() {
       <p className="text-xs text-[var(--text-muted)] mt-4 text-center">
         {users.length} مستخدم إجمالاً
       </p>
+
+      {/* Activity Modal */}
+      {activityUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setActivityUser(null)}>
+          <div
+            className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-[var(--border-color)]">
+              <div className="flex items-center gap-3">
+                <Activity className="w-5 h-5 text-cyan-400" />
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">
+                  نشاط {activityUser.username}
+                </h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="date"
+                  value={activityDate}
+                  onChange={e => fetchActivitiesForDate(e.target.value)}
+                  className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500"
+                />
+                <button
+                  onClick={() => {
+                    setActivityDate('');
+                    setActivityUser(null);
+                  }}
+                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-2">
+              {activityLoading ? (
+                <div className="text-center py-12 text-[var(--text-muted)]">جاري التحميل...</div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-12 text-[var(--text-muted)]">لا توجد أنشطة</div>
+              ) : (
+                activities.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)]"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
+                        a.stars > 0
+                          ? 'bg-emerald-500/10 text-emerald-400'
+                          : a.stars < 0
+                            ? 'bg-red-500/10 text-red-400'
+                            : 'bg-gray-500/10 text-gray-400'
+                      }`}>
+                        {a.stars > 0 ? '+' : ''}{a.stars}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[var(--text-primary)] truncate">
+                          {getActivityName(a.activity_type as any) || a.activity_type}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
+                          <Clock className="w-3 h-3" />
+                          {new Date(a.created_at).toLocaleString('ar-SA')}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`font-bold text-sm shrink-0 mr-3 ${
+                      a.stars > 0 ? 'text-emerald-400' : a.stars < 0 ? 'text-red-400' : 'text-gray-400'
+                    }`}>
+                      {a.stars > 0 ? '+' : ''}{a.stars} ⭐
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-[var(--border-color)] text-center text-xs text-[var(--text-muted)]">
+              إجمالي الأنشطة: {activities.length}
+              {activityDate && (
+                <button
+                  onClick={() => fetchActivitiesForDate('')}
+                  className="mr-3 text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  عرض الكل
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
