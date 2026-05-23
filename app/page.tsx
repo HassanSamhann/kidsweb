@@ -10,7 +10,7 @@ import { cleanAyahText, cleanTafseerText } from '../lib/quran-clean';
 const TEXT_TAFSEER_BASE = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/Quran-Data/Tafseer/tfseer_mokhtser';
 const SURAH_API = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/surah.json';
 const HADITH_API = 'https://raw.githubusercontent.com/fawazahmed0/hadith-api/master/editions/ara-nawawi.min.json';
-
+ 
 export default function Home() {
   const { user } = useAuth();
   const [ayahOfDay, setAyahOfDay] = React.useState<{ text: string; sura: string; aya: number } | null>(null);
