@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { BookOpen, BookText, HeartHandshake, Smile, Clock, Star, BookMarked, Swords } from 'lucide-react';
+import { BookOpen, BookText, HeartHandshake, Smile, Clock, Star, BookMarked, Swords, Sparkles } from 'lucide-react';
 import { PageWrapper } from '../components/ui/PageWrapper';
 import { useAuth } from '../hooks/useAuth';
 import { cleanAyahText, cleanTafseerText } from '../lib/quran-clean';
@@ -136,6 +136,15 @@ export default function Home() {
       icon: HeartHandshake,
       color: 'text-purple-400 bg-purple-500/10',
       borderColor: 'hover:border-purple-500/50'
+    },
+    {
+      title: 'تكبيرات العيد',
+      description: 'استمع إلى أعذب التكبيرات وشارك في تحدي التكبير التفاعلي الممتع',
+      href: '/eid-takbeer',
+      icon: Sparkles,
+      color: 'text-cyan-400 bg-cyan-500/10',
+      borderColor: 'hover:border-cyan-500/50',
+      isNew: true,
     },
     {
       title: 'ركن الأطفال',
