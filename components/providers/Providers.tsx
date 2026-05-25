@@ -5,6 +5,7 @@ import { AudioPlayerProvider } from '../../contexts/AudioPlayerContext';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { NotificationProvider } from '../../contexts/NotificationContext';
 import { InAppNotificationToast } from '../notification/InAppNotificationToast';
+import { NotificationPrompt } from '../NotificationPrompt';
 import { DashboardLayout } from '../layout/DashboardLayout';
 
 function ServiceWorkerRegister() {
@@ -24,6 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <DashboardLayout>
             <ServiceWorkerRegister />
             <InAppNotificationToast />
+            <NotificationPrompt />
             {children}
           </DashboardLayout>
         </NotificationProvider>

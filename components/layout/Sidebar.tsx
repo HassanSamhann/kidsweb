@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
-import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info, Clock, Star, BookMarked, Headphones, Trophy, LayoutDashboard, Swords, Compass, Shield, Sparkles, Bell } from 'lucide-react';
+import { Home, BookOpen, BookText, HeartHandshake, Smile, Settings, Radio as RadioIcon, Info, Clock, Star, BookMarked, Headphones, Trophy, LayoutDashboard, Swords, Compass, Shield, Sparkles, Bell, CheckCircle } from 'lucide-react';
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
@@ -14,7 +14,8 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
   const navItems = [
     { href: '/', icon: Home, label: 'الرئيسية' },
-    { href: '/challenge', icon: Swords, label: 'التحدي', isNew: true },
+    { href: '/muhasabah', icon: CheckCircle, label: 'المحاسبة اليومية', isNew: true },
+    { href: '/challenge', icon: Swords, label: 'التحدي' },
     { href: '/quran', icon: Headphones, label: 'القرآن الكريم' },
     { href: '/quran-read', icon: BookOpen, label: 'قراءة القرآن' },
     { href: '/tafseer', icon: BookMarked, label: 'التفسير' },

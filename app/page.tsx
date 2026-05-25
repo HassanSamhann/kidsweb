@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { BookOpen, BookText, HeartHandshake, Smile, Clock, Star, BookMarked, Swords, Sparkles } from 'lucide-react';
+import { BookOpen, BookText, HeartHandshake, Smile, Clock, Star, BookMarked, Swords, Sparkles, CheckCircle } from 'lucide-react';
 import { PageWrapper } from '../components/ui/PageWrapper';
 import { useAuth } from '../hooks/useAuth';
 import { cleanAyahText, cleanTafseerText } from '../lib/quran-clean';
+import { AnnouncementBanner } from '../components/AnnouncementBanner';
 
 const TEXT_TAFSEER_BASE = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/Quran-Data/Tafseer/tfseer_mokhtser';
 const SURAH_API = 'https://raw.githubusercontent.com/itsSamBz/Islamic-Api/main/surah.json';
@@ -81,13 +82,21 @@ export default function Home() {
 
   const portals = [
     {
+      title: 'المحاسبة اليومية',
+      description: 'جدول متابعة الصلوات والأذكار والأعمال اليومية',
+      href: '/muhasabah',
+      icon: CheckCircle,
+      color: 'text-cyan-400 bg-cyan-500/10',
+      borderColor: 'hover:border-cyan-500/50',
+      isNew: true,
+    },
+    {
       title: 'التحدي',
       description: 'تنافس مع الآخرين في الأسئلة الإسلامية واربح النجوم',
       href: '/challenge',
       icon: Swords,
       color: 'text-amber-400 bg-amber-500/10',
       borderColor: 'hover:border-amber-500/50',
-      isNew: true,
     },
     {
       title: 'القرآن الكريم',
@@ -229,6 +238,8 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        <AnnouncementBanner />
 
         <header className="mb-12">
           <h1 className="text-4xl font-black text-[var(--text-primary)] mb-3">أهلاً بك في منصة إسلامي</h1>
