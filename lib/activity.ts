@@ -194,7 +194,7 @@ export async function getLeaderboard(limit = 20) {
 
 export async function getLastMonthWinner() {
   try {
-    const res = await fetch('/api/activities/last-month-winner');
+    const res = await fetch('/api/activities/last-month-winner', { cache: 'no-store' });
     return res.json();
   } catch {
     return { winner: null };
