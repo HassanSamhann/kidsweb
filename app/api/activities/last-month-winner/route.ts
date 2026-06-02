@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     // Sum stars by user_id
     const userStars: Record<string, number> = {};
     activities.forEach(act => {
-      if (act.stars && act.stars > 0) {
+      if (act.stars) {
         userStars[act.user_id] = (userStars[act.user_id] || 0) + act.stars;
       }
     });
@@ -38,8 +38,9 @@ export async function GET(req: NextRequest) {
     let winnerId = null;
     let maxStars = -1;
     for (const [userId, stars] of Object.entries(userStars)) {
-      if (stars > maxStars) {
-        maxStars = stars;
+      const finalStars = Math.max(0, stars);
+      if (finalStars > maxStars) {
+        maxStars = finalStars;
         winnerId = userId;
       }
     }
