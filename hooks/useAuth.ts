@@ -1,23 +1,17 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { User } from '../types';
 import { useLocalStorage } from './useLocalStorage';
 
 interface AuthContextType {
   user: User | null;
   setUser: (user: User | null) => void;
+  login: (userData: User) => void;
   logout: () => void;
 }
 
-// Global variable for simple auth state without complex providers everywhere if not needed
-// But a hook is better with Context if we wrap the app
-let currentUserState: User | null = null;
-let listeners: ((user: User | null) => void)[] = [];
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function notifyListeners() {
-  listeners.forEach(listener => listener(currentUserState));
-}
-
-export function useAuth() {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useLocalStorage<User | null>('kidsweb_user', null);
 
   const login = (userData: User) => {
@@ -28,5 +22,17 @@ export function useAuth() {
     setUser(null);
   };
 
-  return { user, login, logout, setUser };
+  return React.createElement(
+    AuthContext.Provider,
+    { value: { user, setUser, login, logout } },
+    children
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

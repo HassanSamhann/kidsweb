@@ -7,7 +7,8 @@ import { NotificationProvider } from '../../contexts/NotificationContext';
 import { InAppNotificationToast } from '../notification/InAppNotificationToast';
 import { NotificationPrompt } from '../NotificationPrompt';
 import { DashboardLayout } from '../layout/DashboardLayout';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth, AuthProvider } from '../../hooks/useAuth';
+import { syncTodayActivities } from '../../lib/activity';
 
 function ServiceWorkerRegister() {
   React.useEffect(() => {
@@ -52,21 +53,40 @@ function MonthlyStarsReset() {
   return null;
 }
 
+function DatabaseSync() {
+  const { user, setUser } = useAuth();
+
+  useEffect(() => {
+    if (!user || !user.id) return;
+
+    syncTodayActivities(user.id).then(latestUser => {
+      if (latestUser) {
+        setUser(latestUser);
+      }
+    });
+  }, [user?.id]);
+
+  return null;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <AudioPlayerProvider>
-      <ThemeProvider>
-        <NotificationProvider>
-          <DashboardLayout>
-            <ServiceWorkerRegister />
-            <MonthlyStarsReset />
-            <InAppNotificationToast />
-            <NotificationPrompt />
-            {children}
-          </DashboardLayout>
-        </NotificationProvider>
-      </ThemeProvider>
-    </AudioPlayerProvider>
+    <AuthProvider>
+      <AudioPlayerProvider>
+        <ThemeProvider>
+          <NotificationProvider>
+            <DashboardLayout>
+              <ServiceWorkerRegister />
+              <MonthlyStarsReset />
+              <DatabaseSync />
+              <InAppNotificationToast />
+              <NotificationPrompt />
+              {children}
+            </DashboardLayout>
+          </NotificationProvider>
+        </ThemeProvider>
+      </AudioPlayerProvider>
+    </AuthProvider>
   );
 }
 

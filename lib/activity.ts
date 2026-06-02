@@ -219,3 +219,64 @@ export async function claimDailyVisit() {
   localStorage.setItem('daily_visit_date', today);
   return true;
 }
+
+export async function syncTodayActivities(userId: string): Promise<any | null> {
+  try {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [activitiesRes, profileRes] = await Promise.all([
+      fetch(`/api/activities/today?user_id=${userId}&start_date=${startOfToday.toISOString()}`),
+      fetch(`/api/users/profile?user_id=${userId}`)
+    ]);
+
+    const data = await activitiesRes.json();
+    const profileData = await profileRes.json();
+
+    if (data && Array.isArray(data.activities)) {
+      const todayStr = new Date().toDateString();
+
+      // Accumulate stars per activity type
+      const dailyStarsMap: Record<string, number> = {};
+      const doneAzkarSet = new Set<string>();
+
+      data.activities.forEach((act: any) => {
+        const type = act.activity_type;
+        const stars = act.stars || 0;
+
+        dailyStarsMap[type] = (dailyStarsMap[type] || 0) + stars;
+
+        if (type.startsWith('azkar_')) {
+          doneAzkarSet.add(type);
+        }
+      });
+
+      // Clear today's keys before updating to match db exactly
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('daily_stars_') || key.startsWith('azkar_done_')) && key.endsWith(todayStr)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+
+      // Save to localStorage
+      for (const [type, stars] of Object.entries(dailyStarsMap)) {
+        localStorage.setItem(`daily_stars_${type}_${todayStr}`, String(stars));
+      }
+
+      doneAzkarSet.forEach(type => {
+        localStorage.setItem(`azkar_done_${type}_${todayStr}`, 'true');
+      });
+    }
+
+    if (profileData && profileData.user) {
+      return profileData.user;
+    }
+    return null;
+  } catch (e) {
+    console.error('Failed to sync today activities:', e);
+    return null;
+  }
+}
