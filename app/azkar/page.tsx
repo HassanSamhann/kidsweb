@@ -7,6 +7,7 @@ import { PageWrapper } from '../../components/ui/PageWrapper';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { logActivity, isAzkarDoneToday, markAzkarDoneToday, saveAzkarProgress, getAzkarProgress, type ActivityType } from '../../lib/activity';
 import { playAzkarCompleteSound, playClickSound } from '../../lib/sounds';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Zikr {
   category: string;
@@ -18,6 +19,7 @@ interface Zikr {
 
 export default function AzkarPage() {
   const router = useRouter();
+  const { user, setUser } = useAuth();
   const [azkarData, setAzkarData] = useState<Record<string, Zikr[]>>({});
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,11 +85,10 @@ export default function AzkarPage() {
     return null;
   };
 
+  // Award stars immediately when selecting a category
   useEffect(() => {
-    if (allRemoved && !hasLoggedRef.current) {
-      hasLoggedRef.current = true;
-      const type = selectedCategory ? categoryToType(selectedCategory) : null;
-
+    if (selectedCategory) {
+      const type = categoryToType(selectedCategory);
       if (type) {
         if (isAzkarDoneToday(type)) return;
         markAzkarDoneToday(type);
@@ -97,10 +98,25 @@ export default function AzkarPage() {
           setRewardStars(stars);
           setShowReward(true);
           setTimeout(() => setShowReward(false), 3000);
+          
+          if (user) {
+            setUser({
+              ...user,
+              stars: (user.stars || 0) + stars
+            });
+          }
         });
       }
     }
-  }, [allRemoved, selectedCategory]);
+  }, [selectedCategory, user, setUser]);
+
+  // Play completion sound when all items are checked/counted
+  useEffect(() => {
+    if (allRemoved && !hasLoggedRef.current) {
+      hasLoggedRef.current = true;
+      playAzkarCompleteSound();
+    }
+  }, [allRemoved]);
 
   const resetCategory = () => {
     setCounts({});

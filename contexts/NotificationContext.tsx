@@ -172,14 +172,30 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
     setActiveNotifications(prev => [newInApp, ...prev].slice(0, 5)); // Keep last 5
 
-    // 3. Show native browser notification if allowed
-    if (settings.nativeEnabled && permissionStatus === 'granted' && typeof window !== 'undefined' && 'Notification' in window) {
+    // 3. Show native browser notification if allowed (prefer Service Worker showNotification for mobile/Chrome)
+    if (settings.nativeEnabled && permissionStatus === 'granted' && typeof window !== 'undefined') {
       try {
-        new Notification(title, {
-          body,
-          icon: '/icon.png',
-          dir: 'rtl',
-        });
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then((registration) => {
+            registration.showNotification(title, {
+              body,
+              icon: '/icon.png',
+              dir: 'rtl',
+              badge: '/icon.png',
+            });
+          }).catch((err) => {
+            console.error('Service worker not ready for notification:', err);
+            if ('Notification' in window) {
+              new Notification(title, { body, icon: '/icon.png', dir: 'rtl' });
+            }
+          });
+        } else if ('Notification' in window) {
+          new Notification(title, {
+            body,
+            icon: '/icon.png',
+            dir: 'rtl',
+          });
+        }
       } catch (e) {
         console.error('Failed to trigger native notification:', e);
       }
@@ -200,8 +216,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const fetchPrayerTimesForNotifications = async () => {
       const city = settings.prayerCity || 'Cairo';
       try {
+        const tuneParam = city.toLowerCase() === 'cairo' ? '&tune=0,-4,-4,-4,-4,-4,0,-4,0' : '';
         const res = await fetch(
-          `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=Egypt&method=5`
+          `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=Egypt&method=5${tuneParam}`
         );
         const json = await res.json();
         if (json.code === 200 && json.data?.timings) {

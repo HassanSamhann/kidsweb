@@ -121,8 +121,9 @@ export default function PrayerPage() {
     async (c: string) => {
       setLoading(true);
       try {
+        const tuneParam = c.toLowerCase() === 'cairo' ? '&tune=0,-4,-4,-4,-4,-4,0,-4,0' : '';
         const res = await fetch(
-          `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(c)}&country=${country}&method=5`,
+          `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(c)}&country=${country}&method=5${tuneParam}`,
         );
         const json = await res.json();
         if (json.code === 200) {
