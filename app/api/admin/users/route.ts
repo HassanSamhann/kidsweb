@@ -34,13 +34,11 @@ export async function POST(req: NextRequest) {
 
       if (error) throw error;
 
-      // Attach monthly stars for each user
-      const enriched = await Promise.all(
-        (users || []).map(async (u: any) => {
-          const { data: monthly } = await supabase.rpc('get_user_monthly_stars', { p_user_id: u.id });
-          return { ...u, monthly_stars: monthly || 0 };
-        })
-      );
+      // monthly_stars is now equal to users.stars (kept in sync by DB trigger)
+      const enriched = (users || []).map((u: any) => ({
+        ...u,
+        monthly_stars: u.stars,
+      }));
 
       return NextResponse.json({ users: enriched });
     }
@@ -51,19 +49,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'user_id and stars required' }, { status: 400 });
       }
 
-      // Get current monthly stars, compute diff, log in user_activities
+      // Compute diff between requested value and current monthly total
       const { data: currentMonthly } = await supabase.rpc('get_user_monthly_stars', { p_user_id: user_id });
-      const currentMonthlyVal = typeof currentMonthly === 'number' ? currentMonthly : 0;
-      const diff = stars - currentMonthlyVal;
-
-      const { error: updateErr } = await supabase
-        .from('users')
-        .update({ stars })
-        .eq('id', user_id);
-
-      if (updateErr) throw updateErr;
+      const currentVal = typeof currentMonthly === 'number' ? currentMonthly : 0;
+      const diff = stars - currentVal;
 
       if (diff !== 0) {
+        // Insert an admin_adjust activity — the DB Trigger will update users.stars automatically
         const { error: activityErr } = await supabase
           .from('user_activities')
           .insert({
@@ -72,7 +64,10 @@ export async function POST(req: NextRequest) {
             stars: diff,
             metadata: { note: 'تعديل بواسطة المشرف', adjusted_by: admin_id },
           });
-        if (activityErr) console.error('Failed to log admin adjustment:', activityErr);
+        if (activityErr) {
+          console.error('Failed to log admin adjustment:', activityErr);
+          throw activityErr;
+        }
       }
 
       return NextResponse.json({ ok: true });

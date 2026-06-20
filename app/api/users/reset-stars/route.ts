@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase-admin';
 
+export const dynamic = 'force-dynamic';
+
+/**
+ * POST /api/users/reset-stars
+ * Since the Trigger now keeps users.stars in sync automatically after every
+ * user_activities insert, this endpoint simply re-runs the sync for a given user
+ * (useful for admin fixes or manual reconciliation).
+ */
 export async function POST(req: NextRequest) {
   try {
     const { user_id } = await req.json();
@@ -11,27 +19,17 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    // Get the start of the current month
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Recompute monthly stars from user_activities and update users.stars
+    const { data: monthlyStars, error: rpcError } = await supabase
+      .rpc('get_user_monthly_stars', { p_user_id: user_id });
 
-    // Sum all stars earned by the user in the current month
-    const { data: activities, error: actError } = await supabase
-      .from('user_activities')
-      .select('stars')
-      .eq('user_id', user_id)
-      .gte('created_at', startOfMonth.toISOString());
-
-    if (actError) {
-      console.error('Error fetching activities for reset:', actError);
-      return NextResponse.json({ error: 'Failed to fetch current month activities' }, { status: 500 });
+    if (rpcError) {
+      console.error('Error computing monthly stars:', rpcError);
+      return NextResponse.json({ error: 'Failed to compute stars' }, { status: 500 });
     }
 
-    // Sum up the stars (making sure we handle negative stars from challenge entries correctly)
-    const currentMonthStars = (activities || []).reduce((sum, act) => sum + (act.stars || 0), 0);
-    const finalStars = Math.max(0, currentMonthStars);
+    const finalStars = Math.max(0, monthlyStars ?? 0);
 
-    // Update the users table
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update({ stars: finalStars })
@@ -40,7 +38,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('Error updating user stars for reset:', updateError);
+      console.error('Error updating user stars:', updateError);
       return NextResponse.json({ error: 'Failed to update user stars' }, { status: 500 });
     }
 

@@ -21,25 +21,6 @@ const STAR_VALUES: Record<ActivityType, number> = {
   challenge_lose: -10,
 };
 
-const DAILY_CAP: Record<ActivityType, number> = {
-  azkar_morning: 5,
-  azkar_evening: 5,
-  azkar_after_salah: 5,
-  azkar_tasabih: 5,
-  azkar_sleep: 5,
-  azkar_wakeup: 5,
-  azkar_dua_quran: 5,
-  azkar_dua_prophets: 5,
-  quran_read: 5,
-  quran_listen: 5,
-  tafseer_listen: 5,
-  hadith_read: 5,
-  daily_visit: 1,
-  challenge_entry: 100,
-  challenge_win: 100,
-  challenge_lose: 100,
-};
-
 const ACTIVITY_NAMES: Record<ActivityType, string> = {
   azkar_morning: 'إكمال أذكار الصباح',
   azkar_evening: 'إكمال أذكار المساء',
@@ -67,41 +48,29 @@ export function getActivityName(type: ActivityType): string {
   return ACTIVITY_NAMES[type];
 }
 
-// --- Daily cap & azkar tracking (localStorage) ---
+// ---------------------------------------------------------------------------
+// Azkar UI state (localStorage — for UI hints only, not for star calculations)
+// ---------------------------------------------------------------------------
 
 function today(): string {
   return new Date().toDateString();
 }
 
-function getDailyStars(type: ActivityType): number {
-  const key = `daily_stars_${type}_${today()}`;
-  return parseInt(localStorage.getItem(key) || '0', 10);
-}
-
-function addDailyStars(type: ActivityType, stars: number) {
-  const key = `daily_stars_${type}_${today()}`;
-  const current = getDailyStars(type);
-  localStorage.setItem(key, String(current + stars));
-}
-
-export function canEarnToday(type: ActivityType, stars?: number): boolean {
-  const earned = getDailyStars(type);
-  const cap = DAILY_CAP[type];
-  const adding = stars ?? STAR_VALUES[type];
-  return earned + adding <= cap;
-}
-
 export function isAzkarDoneToday(category: string): boolean {
+  if (typeof window === 'undefined') return false;
   const key = `azkar_done_${category}_${today()}`;
   return localStorage.getItem(key) === 'true';
 }
 
 export function markAzkarDoneToday(category: string) {
+  if (typeof window === 'undefined') return;
   const key = `azkar_done_${category}_${today()}`;
   localStorage.setItem(key, 'true');
 }
 
-// --- Progress persistence ---
+// ---------------------------------------------------------------------------
+// Progress persistence (localStorage — UI only)
+// ---------------------------------------------------------------------------
 
 const QURAN_PROGRESS_KEY = 'quran_progress';
 const AZKAR_PROGRESS_PREFIX = 'azkar_progress_';
@@ -133,37 +102,41 @@ export function getAzkarProgress(category: string): number[] {
   } catch { return []; }
 }
 
-// --- Log activity with daily cap ---
+// ---------------------------------------------------------------------------
+// canEarnToday — checks DB (server-side daily cap), not localStorage
+// Returns the remaining stars the user can earn for this activity today.
+// ---------------------------------------------------------------------------
 
-export async function logActivity(type: ActivityType, metadata?: Record<string, unknown>) {
+export async function canEarnToday(type: ActivityType): Promise<boolean> {
+  try {
+    const stored = localStorage.getItem('kidsweb_user');
+    if (!stored) return false;
+    const user = JSON.parse(stored);
+    if (!user?.id) return false;
+
+    const res = await fetch(`/api/activities/can-earn?user_id=${user.id}&type=${type}`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.can_earn === true;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// logActivity — delegates daily cap to DB via log_activity_safe RPC
+// Returns { actual_stars, total_stars } or null on failure
+// ---------------------------------------------------------------------------
+
+export async function logActivity(
+  type: ActivityType,
+  metadata?: Record<string, unknown>
+): Promise<{ actual_stars: number; total_stars: number } | null> {
   const stored = localStorage.getItem('kidsweb_user');
   if (!stored) return null;
 
   const user = JSON.parse(stored);
   if (!user?.id) return null;
-
-  // Check daily cap
-  if (!canEarnToday(type)) {
-    // Still log but with 0 stars (activity tracked, no reward)
-    try {
-      await fetch('/api/activities/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          activity_type: type,
-          stars: 0,
-          metadata: { ...(metadata || {}), capped: true },
-        }),
-      });
-    } catch {}
-    return null;
-  }
-
-  const starsToAward = Math.min(STAR_VALUES[type], DAILY_CAP[type] - getDailyStars(type));
-  if (starsToAward <= 0) return null;
-
-  addDailyStars(type, starsToAward);
 
   try {
     const res = await fetch('/api/activities/log', {
@@ -172,11 +145,15 @@ export async function logActivity(type: ActivityType, metadata?: Record<string, 
       body: JSON.stringify({
         user_id: user.id,
         activity_type: type,
-        stars: starsToAward,
         metadata: metadata || {},
       }),
     });
-    return res.json();
+
+    if (!res.ok) return null;
+
+    const result = await res.json();
+    // result = { actual_stars: number, total_stars: number }
+    return result;
   } catch (e) {
     console.error('Failed to log activity:', e);
     return null;
@@ -210,15 +187,29 @@ export async function getUserStats(userId: string) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// claimDailyVisit — guards with localStorage date, logs via server
+// ---------------------------------------------------------------------------
+
 export async function claimDailyVisit() {
   const lastVisit = localStorage.getItem('daily_visit_date');
-  const today = new Date().toDateString();
-  if (lastVisit === today) return false;
+  const todayStr = new Date().toDateString();
+  if (lastVisit === todayStr) return false;
 
-  await logActivity('daily_visit');
-  localStorage.setItem('daily_visit_date', today);
-  return true;
+  const result = await logActivity('daily_visit');
+  if (result !== null) {
+    localStorage.setItem('daily_visit_date', todayStr);
+    return true;
+  }
+  return false;
 }
+
+// ---------------------------------------------------------------------------
+// syncTodayActivities
+// Syncs azkar UI state (localStorage) from DB activities.
+// Does NOT rebuild the daily cap from localStorage — the DB owns that.
+// Returns the fresh user profile from DB.
+// ---------------------------------------------------------------------------
 
 export async function syncTodayActivities(userId: string): Promise<any | null> {
   try {
@@ -227,48 +218,33 @@ export async function syncTodayActivities(userId: string): Promise<any | null> {
 
     const [activitiesRes, profileRes] = await Promise.all([
       fetch(`/api/activities/today?user_id=${userId}&start_date=${startOfToday.toISOString()}`),
-      fetch(`/api/users/profile?user_id=${userId}`)
+      fetch(`/api/users/profile?user_id=${userId}`),
     ]);
 
-    const data = await activitiesRes.json();
+    const data       = await activitiesRes.json();
     const profileData = await profileRes.json();
 
+    // Sync azkar UI done-state only (for hiding "أكملت" buttons)
     if (data && Array.isArray(data.activities)) {
       const todayStr = new Date().toDateString();
-
-      // Accumulate stars per activity type
-      const dailyStarsMap: Record<string, number> = {};
       const doneAzkarSet = new Set<string>();
 
       data.activities.forEach((act: any) => {
-        const type = act.activity_type;
-        const stars = act.stars || 0;
-
-        dailyStarsMap[type] = (dailyStarsMap[type] || 0) + stars;
-
-        if (type.startsWith('azkar_')) {
-          doneAzkarSet.add(type);
+        if (act.activity_type.startsWith('azkar_') && act.stars > 0) {
+          doneAzkarSet.add(act.activity_type);
         }
       });
 
-      // Clear today's keys before updating to match db exactly
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('daily_stars_') || key.startsWith('azkar_done_')) && key.endsWith(todayStr)) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach(k => localStorage.removeItem(k));
-
-      // Save to localStorage
-      for (const [type, stars] of Object.entries(dailyStarsMap)) {
-        localStorage.setItem(`daily_stars_${type}_${todayStr}`, String(stars));
-      }
-
+      // Sync azkar_done_ keys for UI (does NOT affect star calculations)
       doneAzkarSet.forEach(type => {
         localStorage.setItem(`azkar_done_${type}_${todayStr}`, 'true');
       });
+
+      // Sync daily visit key
+      const hasVisit = data.activities.some((a: any) => a.activity_type === 'daily_visit' && a.stars > 0);
+      if (hasVisit) {
+        localStorage.setItem('daily_visit_date', todayStr);
+      }
     }
 
     if (profileData && profileData.user) {

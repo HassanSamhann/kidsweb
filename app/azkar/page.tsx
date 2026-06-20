@@ -94,15 +94,17 @@ export default function AzkarPage() {
         markAzkarDoneToday(type);
         playAzkarCompleteSound();
         logActivity(type, { category: selectedCategory }).then((res: any) => {
-          const stars = res?.stars || 3;
-          setRewardStars(stars);
-          setShowReward(true);
-          setTimeout(() => setShowReward(false), 3000);
-          
-          if (user) {
+          const stars = res?.actual_stars ?? 0;
+          if (stars > 0) {
+            setRewardStars(stars);
+            setShowReward(true);
+            setTimeout(() => setShowReward(false), 3000);
+          }
+          // Update user stars from DB total (source of truth)
+          if (user && res?.total_stars !== undefined) {
             setUser({
               ...user,
-              stars: (user.stars || 0) + stars
+              stars: res.total_stars,
             });
           }
         });

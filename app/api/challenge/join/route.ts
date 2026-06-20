@@ -32,18 +32,30 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    const [userResult, monthlyResult] = await Promise.all([
-      supabase.from('users').select('stars').eq('id', user_id).single(),
-      supabase.rpc('get_user_monthly_stars', { p_user_id: user_id }),
-    ]);
-    const lifetimeStars = userResult.data?.stars || 0;
-    const monthlyStars = monthlyResult.data || 0;
-    const totalStars = lifetimeStars + monthlyStars;
-    if (totalStars < 10) {
-      return NextResponse.json({ error: 'يجب أن يكون لديك على الأقل 10 نجوم للمشاركة في التحدي' }, { status: 400 });
+    // users.stars is now kept in sync by the DB trigger (= current month stars).
+    // No need to add lifetimeStars + monthlyStars — just use users.stars directly.
+    const { data: userRow, error: userErr } = await supabase
+      .from('users')
+      .select('stars')
+      .eq('id', user_id)
+      .single();
+
+    if (userErr || !userRow) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { data: existing } = await supabase.from('challenge_queue').select('id').eq('user_id', user_id).maybeSingle();
+    if (userRow.stars < 10) {
+      return NextResponse.json(
+        { error: 'يجب أن يكون لديك على الأقل 10 نجوم للمشاركة في التحدي' },
+        { status: 400 }
+      );
+    }
+
+    const { data: existing } = await supabase
+      .from('challenge_queue')
+      .select('id')
+      .eq('user_id', user_id)
+      .maybeSingle();
     if (existing) {
       return NextResponse.json({ error: 'أنت بالفعل في قائمة الانتظار' }, { status: 400 });
     }
@@ -82,7 +94,8 @@ export async function POST(req: NextRequest) {
         .select('*')
         .single();
 
-      // Deduct 10★ entry fee from both players
+      // Deduct 10★ entry fee from both players via user_activities
+      // The Trigger will automatically reduce users.stars
       await supabase.from('user_activities').insert([
         { user_id: opponent.user_id, activity_type: 'challenge_entry', stars: -10, metadata: { session_id: session?.id } },
         { user_id, activity_type: 'challenge_entry', stars: -10, metadata: { session_id: session?.id } },
