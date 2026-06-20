@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase-admin';
 
+export const dynamic = 'force-dynamic';
+
 async function checkAdmin(userId: string) {
   const supabase = getSupabaseAdmin();
   const { data: user } = await supabase.from('users').select('role').eq('id', userId).single();

@@ -16,7 +16,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 });
     }
 
-    return NextResponse.json(data || []);
+    // Map the database returned 'stars' key to 'total_stars' to match frontend expects
+    const enriched = (data || []).map((item: any) => ({
+      user_id: item.user_id,
+      username: item.username,
+      total_stars: Number(item.stars ?? 0),
+    }));
+
+    return NextResponse.json(enriched);
   } catch (err) {
     console.error('Error in leaderboard route:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

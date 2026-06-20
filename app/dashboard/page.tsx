@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { getUserStats, getActivityName } from '../../lib/activity';
+import { getUserStats, getActivityName, getLeaderboard } from '../../lib/activity';
 import { Star, Trophy, Clock, Target, Medal, TrendingUp, Activity } from 'lucide-react';
 
 interface RecentActivity {
@@ -25,7 +25,7 @@ export default function DashboardPage() {
     }
     Promise.all([
       getUserStats(user.id),
-      fetch('/api/activities/leaderboard?limit=5').then(r => r.json()),
+      getLeaderboard(5),
     ]).then(([s, lb]) => {
       setStats(s);
       setLeaderboard(lb);

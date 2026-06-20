@@ -114,7 +114,7 @@ export async function canEarnToday(type: ActivityType): Promise<boolean> {
     const user = JSON.parse(stored);
     if (!user?.id) return false;
 
-    const res = await fetch(`/api/activities/can-earn?user_id=${user.id}&type=${type}`);
+    const res = await fetch(`/api/activities/can-earn?user_id=${user.id}&type=${type}`, { cache: 'no-store' });
     if (!res.ok) return false;
     const data = await res.json();
     return data.can_earn === true;
@@ -162,7 +162,7 @@ export async function logActivity(
 
 export async function getLeaderboard(limit = 20) {
   try {
-    const res = await fetch(`/api/activities/leaderboard?limit=${limit}`);
+    const res = await fetch(`/api/activities/leaderboard?limit=${limit}`, { cache: 'no-store' });
     return res.json();
   } catch {
     return [];
@@ -180,7 +180,7 @@ export async function getLastMonthWinner() {
 
 export async function getUserStats(userId: string) {
   try {
-    const res = await fetch(`/api/activities/user-stats?user_id=${userId}`);
+    const res = await fetch(`/api/activities/user-stats?user_id=${userId}`, { cache: 'no-store' });
     return res.json();
   } catch {
     return { total_stars: 0, recent_activities: [] };
@@ -217,8 +217,8 @@ export async function syncTodayActivities(userId: string): Promise<any | null> {
     startOfToday.setHours(0, 0, 0, 0);
 
     const [activitiesRes, profileRes] = await Promise.all([
-      fetch(`/api/activities/today?user_id=${userId}&start_date=${startOfToday.toISOString()}`),
-      fetch(`/api/users/profile?user_id=${userId}`),
+      fetch(`/api/activities/today?user_id=${userId}&start_date=${startOfToday.toISOString()}`, { cache: 'no-store' }),
+      fetch(`/api/users/profile?user_id=${userId}`, { cache: 'no-store' }),
     ]);
 
     const data       = await activitiesRes.json();
