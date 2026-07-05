@@ -1,22 +1,88 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Search, Radio, Globe, Moon, Sun, User as UserIcon, Menu, LogOut, ChevronDown, Star, LayoutDashboard, Settings, Shield } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Search, Radio, Globe, Moon, Sun, User as UserIcon, Menu, LogOut, ChevronDown, Star, LayoutDashboard, Settings, Shield, Loader2, X, BookOpen, BookText, HeartHandshake, Hash } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getUserStats } from '../../lib/activity';
 import { InstallPWA } from '../InstallPWA';
 
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  page:   <BookOpen className="w-4 h-4" />,
+  surah:  <BookOpen className="w-4 h-4 text-cyan-400" />,
+  hadith: <BookText className="w-4 h-4 text-blue-400" />,
+  azkar:  <HeartHandshake className="w-4 h-4 text-purple-400" />,
+  allah:  <Star className="w-4 h-4 text-amber-400" />,
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  page:   'صفحة',
+  surah:  'سورة',
+  hadith: 'حديث',
+  azkar:  'أذكار',
+  allah:  'اسم الله',
+};
+
+interface SearchResult {
+  type: string;
+  label: string;
+  description?: string;
+  path: string;
+}
+
+function useSearch() {
+  const [query, setQuery] = React.useState('');
+  const [results, setResults] = React.useState<SearchResult[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    if (!query || query.length < 2) {
+      setResults([]);
+      setOpen(false);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setOpen(true);
+
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { cache: 'no-store' });
+        const data = await res.json();
+        setResults(data.results || []);
+      } catch {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 280);
+  }, [query]);
+
+  const clear = () => {
+    setQuery('');
+    setResults([]);
+    setOpen(false);
+  };
+
+  return { query, setQuery, results, loading, open, setOpen, clear };
+};
+
 export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [starCount, setStarCount] = React.useState<number | null>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const searchRef = React.useRef<HTMLDivElement>(null);
+  const { query, setQuery, results, loading, open, setOpen, clear } = useSearch();
 
   React.useEffect(() => {
     setMounted(true);
@@ -33,10 +99,22 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [setOpen]);
+
+  React.useEffect(() => {
+    clear();
+  }, [pathname]);
+
+  const handleSearchSelect = (path: string) => {
+    clear();
+    router.push(path);
+  };
 
   return (
     <header className="h-20 bg-[var(--bg-header)] border-b border-[var(--border-color)] flex items-center justify-between px-6 sticky top-0 z-30 transition-colors">
@@ -50,13 +128,61 @@ export function TopHeader({ onMenuClick }: { onMenuClick?: () => void }) {
       </button>
 
       {/* Search Bar */}
-      <div className="hidden md:flex items-center flex-1 max-w-xl relative mx-4">
-        <Search className="absolute left-4 w-5 h-5 text-[var(--text-muted)]" />
+      <div ref={searchRef} className="hidden md:flex flex-1 max-w-xl relative mx-4">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)] pointer-events-none" />
         <input 
           type="text" 
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onFocus={() => query.length >= 2 && setOpen(true)}
           placeholder="البحث عن قارئ، سورة، أو ذكر..."
           className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-full py-2.5 pl-12 pr-6 text-[var(--text-primary)] focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-right"
         />
+        {/* Loading / Clear */}
+        <div className="absolute left-11 top-1/2 -translate-y-1/2 flex items-center">
+          {loading ? (
+            <Loader2 className="w-4 h-4 text-cyan-500 animate-spin" />
+          ) : query ? (
+            <button onClick={clear} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">
+              <X className="w-4 h-4" />
+            </button>
+          ) : null}
+        </div>
+
+        {/* Search Dropdown */}
+        {open && (
+          <div className="search-dropdown max-h-[380px] overflow-y-auto w-full">
+            {results.length === 0 && !loading ? (
+              <div className="px-4 py-6 text-center text-[var(--text-muted)] text-sm">
+                لا توجد نتائج لـ «{query}»
+              </div>
+            ) : (
+              <ul className="py-1">
+                {results.map((r, i) => (
+                  <li key={`${r.type}-${i}`}>
+                    <button
+                      onClick={() => handleSearchSelect(r.path)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-right hover:bg-[var(--bg-input)] transition-colors group"
+                    >
+                      <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-[var(--bg-app)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-cyan-400 transition-colors">
+                        {TYPE_ICONS[r.type] || <Hash className="w-4 h-4" />}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-[var(--text-primary)] truncate">{r.label}</p>
+                        {r.description && (
+                          <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{r.description}</p>
+                        )}
+                      </div>
+                      <span className="flex-shrink-0 text-[10px] font-bold text-[var(--text-muted)] bg-[var(--bg-app)] px-2 py-0.5 rounded-full">
+                        {TYPE_LABELS[r.type] || r.type}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Right Controls */}
